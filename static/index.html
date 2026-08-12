@@ -482,6 +482,8 @@
             <ul>
                 <li><a href="#" onclick="filterProducts('all')">Все материалы</a></li>
                 
+                <li><a href="#" onclick="filterProducts('diagnostics')">Диагностика</a></li>
+                
                 <!-- Выпадающий список: Рабочие тетради -->
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" onclick="filterProducts('workbooks')">Рабочие тетради</a>
@@ -498,7 +500,7 @@
 
                 <!-- Выпадающий список: Программы курсов -->
                 <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" onclick="filterProducts('courses')">Программы курсов</a>
+                    <a href="#" class="dropdown-toggle" onclick="filterProducts('courses')">Программы коррекционных курсов</a>
                     <div class="dropdown-menu" id="coursesDropdown">
                         <div class="dropdown-section-title">По специалисту</div>
                         <div class="dropdown-item" data-filter="courses" data-cat="0" onclick="filterByCategory('courses', 'all')">
@@ -509,6 +511,9 @@
                     </div>
                 </li>
 
+                <li><a href="#" onclick="filterProducts('didactic_games')">Дидактические игры</a></li>
+                <li><a href="#" onclick="filterProducts('documents')">Документы дефектолога</a></li>
+                <li><a href="#" onclick="filterProducts('worksheets')">Рабочие листы</a></li>
                 <li><a href="#" onclick="showContactInfo()">Наши контакты</a></li>
             </ul>
         </nav>
@@ -523,8 +528,12 @@
         <h2 class="section-title">Все материалы</h2>
         <div class="filter-bar" id="filterBar">
             <button class="filter-btn active" onclick="filterProducts('all')">Все</button>
+            <button class="filter-btn" onclick="filterProducts('diagnostics')">🔍 Диагностика</button>
             <button class="filter-btn" onclick="filterProducts('workbooks')">📓 Рабочие тетради</button>
             <button class="filter-btn" onclick="filterProducts('courses')">📘 Программы курсов</button>
+            <button class="filter-btn" onclick="filterProducts('didactic_games')">🎲 Дидактические игры</button>
+            <button class="filter-btn" onclick="filterProducts('documents')">📄 Документы</button>
+            <button class="filter-btn" onclick="filterProducts('worksheets')">📝 Рабочие листы</button>
         </div>
         <div class="grid" id="productsGrid">
             <!-- Карточки загружаются динамически -->
@@ -659,8 +668,12 @@
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.textContent.includes('Все') && currentFilter === 'all') btn.classList.add('active');
-                if (btn.textContent.includes('Рабочие') && currentFilter === 'workbooks') btn.classList.add('active');
+                if (btn.textContent.includes('Диагностика') && currentFilter === 'diagnostics') btn.classList.add('active');
+                if (btn.textContent.includes('Рабочие тетради') && currentFilter === 'workbooks') btn.classList.add('active');
                 if (btn.textContent.includes('Программы') && currentFilter === 'courses') btn.classList.add('active');
+                if (btn.textContent.includes('Дидактические') && currentFilter === 'didactic_games') btn.classList.add('active');
+                if (btn.textContent.includes('Документы') && currentFilter === 'documents') btn.classList.add('active');
+                if (btn.textContent.includes('Рабочие листы') && currentFilter === 'worksheets') btn.classList.add('active');
             });
         }
 
@@ -675,10 +688,18 @@
             
             let filtered = allProducts;
             
-            if (currentFilter === 'workbooks') {
+            if (currentFilter === 'diagnostics') {
+                filtered = filtered.filter(p => p.type === 'diagnostics');
+            } else if (currentFilter === 'workbooks') {
                 filtered = filtered.filter(p => p.type === 'workbooks');
             } else if (currentFilter === 'courses') {
                 filtered = filtered.filter(p => p.type === 'courses');
+            } else if (currentFilter === 'didactic_games') {
+                filtered = filtered.filter(p => p.type === 'didactic_games');
+            } else if (currentFilter === 'documents') {
+                filtered = filtered.filter(p => p.type === 'documents');
+            } else if (currentFilter === 'worksheets') {
+                filtered = filtered.filter(p => p.type === 'worksheets');
             }
 
             if (currentCategoryFilter !== 'all') {
