@@ -1,0 +1,135 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<style>
+    .instructions {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .instructions h2 {
+        color: #9f7aea;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+        margin-top: 30px;
+    }
+    .instructions h3 {
+        color: #4fd1c5;
+        margin-top: 20px;
+    }
+    .instructions ol, .instructions ul {
+        line-height: 1.8;
+        padding-left: 20px;
+    }
+    .instructions li {
+        margin-bottom: 8px;
+    }
+    .instructions code {
+        background: #f7fafc;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #9f7aea;
+    }
+    .step {
+        background: #f7fafc;
+        border-left: 4px solid #9f7aea;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 0 8px 8px 0;
+    }
+    .warning {
+        background: #fff5f5;
+        border-left: 4px solid #fc8181;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 0 8px 8px 0;
+    }
+</style>
+
+<div class="instructions">
+    <h1 style="text-align: center; color: #9f7aea;">📖 Инструкция по управлению сайтом</h1>
+    
+    <div class="step">
+        <h2>1️⃣ Добавление категорий</h2>
+        <p>Категории — это разделы, по которым пользователи фильтруют материалы.</p>
+        <ul>
+            <li><strong>name</strong> — название категории (отображается в фильтрах)</li>
+            <li><strong>product_type</strong> — тип материалов в этой категории:
+                <ul>
+                    <li><code>diagnostics</code> — Диагностика</li>
+                    <li><code>workbooks</code> — Рабочие тетради</li>
+                    <li><code>courses</code> — Программы коррекционных курсов</li>
+                    <li><code>didactic_games</code> — Дидактические игры</li>
+                    <li><code>documents</code> — Документы</li>
+                    <li><code>worksheets</code> — Рабочие листы</li>
+                </ul>
+            </li>
+        </ul>
+        <p>⚠️ <strong>Важно:</strong> При создании категории «Дефектологам» или «Логопедам» обязательно установи <code>product_type = courses</code>, иначе они не появятся в фильтре программ курсов.</p>
+    </div>
+
+    <div class="step">
+        <h2>2️⃣ Добавление товаров (материалов)</h2>
+        <p>Каждый товар — это карточка, которую увидит пользователь на сайте.</p>
+        <ul>
+            <li><strong>title</strong> — название материала</li>
+            <li><strong>description</strong> — краткое описание</li>
+            <li><strong>price</strong> — цена (оставь пустым, если бесплатно)</li>
+            <li><strong>type</strong> — тип материала (совпадает с product_type категорий)</li>
+            <li><strong>category</strong> — выбери категорию из списка</li>
+            <li><strong>show_contacts</strong>:
+                <ul>
+                    <li>✅ <strong>Включено</strong> — пользователь увидит контакты и кнопку «Связаться» + скачает файл</li>
+                    <li>❌ <strong>Выключено</strong> — откроется форма заявки</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>2.1 Загрузка файла товара</h2>
+        <p>При создании или редактировании товара есть поле <strong>«Файл товара»</strong>:</p>
+        <ul>
+            <li>Нажми «Выберите файл» и загрузи PDF, ZIP или DOC</li>
+            <li>Файл автоматически сохранится в папку <code>uploads/</code></li>
+            <li>Путь к файлу заполнится автоматически</li>
+            <li>Если файл с таким именем уже есть — добавится суффикс <code>_1</code>, <code>_2</code> и т.д.</li>
+        </ul>
+        <p>✅ После сохранения товара файл будет доступен по ссылке на сайте.</p>
+    </div>
+
+    <div class="step">
+        <h2>4️⃣ Заявки (Лиды)</h2>
+        <p>Здесь отображаются все заявки, оставленные пользователями через форму на сайте.</p>
+        <ul>
+            <li><strong>name</strong> — имя пользователя</li>
+            <li><strong>contact</strong> — Telegram или телефон</li>
+            <li><strong>product_name</strong> — какой товар интересовал</li>
+            <li><strong>date</strong> — дата и время заявки</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>5️⃣ Настройки Сайта</h2>
+        <p>Здесь настраиваются контакты и уведомления:</p>
+        <ul>
+            <li><strong>phone</strong> — номер телефона для отображения</li>
+            <li><strong>email</strong> — email для отображения</li>
+            <li><strong>tg_username</strong> — никнейм Telegram для отображения</li>
+            <li><strong>tg_link</strong> — полная ссылка на Telegram-канал/личку</li>
+            <li><strong>telegram_bot_token</strong> — токен от @BotFather (для уведомлений в Telegram)</li>
+            <li><strong>telegram_chat_id</strong> — ваш ID чата (куда будут приходить уведомления)</li>
+        </ul>
+        <p>🔧 <strong>Как получить токен и ID:</strong></p>
+        <ol>
+            <li>Напишите <code>@BotFather</code> → <code>/newbot</code> → скопируйте токен</li>
+            <li>Напишите <code>@userinfobot</code> → скопируйте ваш ID</li>
+            <li>Вставьте оба значения в настройки и нажмите «Сохранить»</li>
+        </ol>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ Важно:</strong> После добавления товаров через админку они сразу появляются на сайте. Не нужно перезагружать сервер.
+    </div>
+</div>
+{% endblock %}

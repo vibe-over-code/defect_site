@@ -484,19 +484,8 @@
                 
                 <li><a href="#" onclick="filterProducts('diagnostics')">Диагностика</a></li>
                 
-                <!-- Выпадающий список: Рабочие тетради -->
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" onclick="filterProducts('workbooks')">Рабочие тетради</a>
-                    <div class="dropdown-menu" id="workbooksDropdown">
-                        <div class="dropdown-section-title">По специалисту</div>
-                        <!-- Заполняется динамически -->
-                        <div class="dropdown-item" data-filter="workbooks" data-cat="0" onclick="filterByCategory('workbooks', 'all')">
-                            <span>Все</span>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-section-title">Загрузка...</div>
-                    </div>
-                </li>
+                <!-- Рабочие тетради — без выпадающего списка -->
+                <li><a href="#" onclick="filterProducts('workbooks')">Рабочие тетради</a></li>
 
                 <!-- Выпадающий список: Программы курсов -->
                 <li class="dropdown">
@@ -600,38 +589,24 @@
 
         // --- Заполнение выпадающих списков ---
         function populateDropdowns() {
-            const workbooksCats = allCategories.filter(c => 
-                allProducts.some(p => p.category_id === c.id && p.type === 'workbooks')
-            );
             const coursesCats = allCategories.filter(c => 
                 allProducts.some(p => p.category_id === c.id && p.type === 'courses')
             );
 
-            // Рабочие тетради
-            const wbDropdown = document.getElementById('workbooksDropdown');
-            wbDropdown.innerHTML = `
-                <div class="dropdown-section-title">По специалисту</div>
-                <div class="dropdown-item" data-cat="0" onclick="filterByDropdown('workbooks', 'all')">
-                    <span>Все</span>
-                </div>
-                <div class="dropdown-divider"></div>
-                ${workbooksCats.map(c => `
-                    <div class="dropdown-item" data-cat="${c.id}" onclick="filterByDropdown('workbooks', ${c.id})">
-                        <span>${c.name}</span>
-                        <span class="badge">${c.products_count}</span>
-                    </div>
-                `).join('')}
-            `;
-
             // Программы курсов
             const crDropdown = document.getElementById('coursesDropdown');
             crDropdown.innerHTML = `
-                <div class="dropdown-section-title">По специалисту</div>
                 <div class="dropdown-item" data-cat="0" onclick="filterByDropdown('courses', 'all')">
                     <span>Все</span>
                 </div>
+                <div class="dropdown-item" data-cat="defektolog" onclick="filterByDropdown('courses', 'defektolog')">
+                    <span>Дефектологам</span>
+                </div>
+                <div class="dropdown-item" data-cat="logoped" onclick="filterByDropdown('courses', 'logoped')">
+                    <span>Логопедам</span>
+                </div>
                 <div class="dropdown-divider"></div>
-                ${coursesCats.map(c => `
+                ${coursesCats.filter(c => c.name !== 'Дефектологам' && c.name !== 'Логопедам').map(c => `
                     <div class="dropdown-item" data-cat="${c.id}" onclick="filterByDropdown('courses', ${c.id})">
                         <span>${c.name}</span>
                         <span class="badge">${c.products_count}</span>
@@ -702,7 +677,17 @@
                 filtered = filtered.filter(p => p.type === 'worksheets');
             }
 
-            if (currentCategoryFilter !== 'all') {
+            if (currentCategoryFilter === 'defektolog') {
+                filtered = filtered.filter(p => {
+                    const cat = allCategories.find(c => c.id === p.category_id);
+                    return cat && cat.name === 'Дефектологам';
+                });
+            } else if (currentCategoryFilter === 'logoped') {
+                filtered = filtered.filter(p => {
+                    const cat = allCategories.find(c => c.id === p.category_id);
+                    return cat && cat.name === 'Логопедам';
+                });
+            } else if (currentCategoryFilter !== 'all') {
                 filtered = filtered.filter(p => p.category_id === currentCategoryFilter);
             }
 

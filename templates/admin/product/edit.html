@@ -1,0 +1,14 @@
+{% extends 'admin/model/edit.html' %}
+
+{% block tail %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем enctype для загрузки файлов
+    var form = document.querySelector('form');
+    if (form) {
+        form.setAttribute('enctype', 'multipart/form-data');
+    }
+});
+</script>
+{% endblock %}
