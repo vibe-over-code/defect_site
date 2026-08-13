@@ -3,17 +3,27 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.base import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.form import BaseForm
 from wtforms import FileField, StringField
-from wtforms.validators import DataRequired
 from werkzeug.utils import secure_filename
 import os
 import requests
 
 app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 # Настройки базы данных (SQLite создастся автоматически в папке с проектом)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config['SECRET_KEY'] = 'super-secret-key-123' 
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+else:
+    os.makedirs(INSTANCE_DIR, exist_ok=True)
+    database_url = f"sqlite:///{os.path.join(INSTANCE_DIR, 'site.db')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-only-change-me')
+app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 db = SQLAlchemy(app)
 
 # ==========================================
@@ -75,33 +85,30 @@ class CategoryView(ModelView):
     form_columns = ('name', 'product_type')
     column_searchable_list = ('name',)
 
-class ProductForm(BaseForm):
-    file = FileField('Файл товара (PDF, ZIP, DOC)', validators=[])
-    file_path = StringField('Путь к файлу')
-
 class ProductView(ModelView):
     column_list = ('id', 'title', 'type', 'category_id', 'show_contacts', 'price', 'file_path')
     form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'file_path')
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
+    form_extra_fields = {
+        'file': FileField('Файл товара (PDF, ZIP, DOC)')
+    }
     
-    def create_form(self, form=None, obj=None):
-        form = super().create_form(form, obj)
-        form.__class__ = type('ProductForm', (ProductForm, form.__class__), {})
+    def create_form(self):
+        form = super().create_form()
+        form.__class__ = type('ProductForm', (form.__class__,), {'enctype': 'multipart/form-data'})
         return form
     
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
-        form.__class__ = type('ProductForm', (ProductForm, form.__class__), {})
-        if obj and obj.file_path:
-            form.file_path.data = obj.file_path
+        form.__class__ = type('ProductForm', (form.__class__,), {'enctype': 'multipart/form-data'})
         return form
     
     def on_model_change(self, form, product, is_created):
         """Обработка загрузки файла при создании/редактировании товара"""
-        if 'file' in request.files:
-            file = request.files['file']
-            if file and file.filename and allowed_file(file.filename):
+        file = form.file.data
+        if file and file.filename:
+            if allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 
                 # Если файл уже существует — добавляем префикс
@@ -196,19 +203,27 @@ def get_settings():
 @app.route('/api/new_order', methods=['POST'])
 def new_order():
     """Сюда прилетают данные из модального окна сайта"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    contact = (data.get('contact') or '').strip()
+    product = (data.get('product') or '').strip()
+    if not name or not contact or not product:
+        return jsonify({"status": "error", "message": "Заполните имя, контакт и материал."}), 400
     
     # 1. Сохраняем заявку в базу (в админку)
-    lead = Lead(name=data.get('name'), contact=data.get('contact'), product_name=data.get('product'))
+    lead = Lead(name=name, contact=contact, product_name=product)
     db.session.add(lead)
     db.session.commit()
     
     # 2. Отправляем уведомление вам в Telegram
     settings = SiteSettings.query.first()
-    if settings and settings.telegram_bot_token != 'ТОКЕН_ОТ_BOTFATHER':
+    if settings and settings.telegram_bot_token and settings.telegram_chat_id and settings.telegram_bot_token != 'ТОКЕН_ОТ_BOTFATHER':
         msg = f"🚨 НОВЫЙ ЗАКАЗ!\n👤 Имя: {data.get('name')}\n📞 Контакт: {data.get('contact')}\n📦 Товар: {data.get('product')}"
         tg_url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
-        requests.post(tg_url, json={"chat_id": settings.telegram_chat_id, "text": msg})
+        try:
+            requests.post(tg_url, json={"chat_id": settings.telegram_chat_id, "text": msg}, timeout=10)
+        except requests.RequestException:
+            app.logger.exception('Telegram notification failed')
         
     return jsonify({"status": "success", "message": "Заявка принята"})
 
@@ -216,7 +231,6 @@ def new_order():
 # 4. РАЗДАЧА ФАЙЛОВ ИЗ uploads/
 # ==========================================
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 ALLOWED_EXTENSIONS = {'pdf', 'zip', 'doc', 'docx'}
 
 def allowed_file(filename):
@@ -230,23 +244,24 @@ def uploaded_file(filename):
 # 5. ЗАПУСК
 # ==========================================
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        if not SiteSettings.query.first():
-            db.session.add(SiteSettings())
-            db.session.commit()
-        
-        # Начальные категории, если их нет
-        if Category.query.count() == 0:
-            db.session.add_all([
-                Category(name='Диагностика', product_type='diagnostics'),
-                Category(name='Дефектологам', product_type='courses'),
-                Category(name='Логопедам', product_type='courses'),
-                Category(name='Дидактические игры', product_type='didactic_games'),
-                Category(name='Документы', product_type='documents'),
-                Category(name='Рабочие листы', product_type='worksheets'),
-            ])
-            db.session.commit()
+# Инициализация БД при запуске (работает и локально, и на Render)
+with app.app_context():
+    db.create_all()
+    if not SiteSettings.query.first():
+        db.session.add(SiteSettings())
+        db.session.commit()
     
+    # Начальные категории, если их нет
+    if Category.query.count() == 0:
+        db.session.add_all([
+            Category(name='Диагностика', product_type='diagnostics'),
+            Category(name='Дефектологам', product_type='courses'),
+            Category(name='Логопедам', product_type='courses'),
+            Category(name='Дидактические игры', product_type='didactic_games'),
+            Category(name='Документы', product_type='documents'),
+            Category(name='Рабочие листы', product_type='worksheets'),
+        ])
+        db.session.commit()
+
+if __name__ == '__main__':
     app.run(debug=True, port=5000)
