@@ -87,7 +87,7 @@ class CategoryView(ModelView):
 
 class ProductView(ModelView):
     column_list = ('id', 'title', 'type', 'category_id', 'show_contacts', 'price', 'file_path')
-    form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'file_path')
+    form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'file', 'file_path')
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
     form_extra_fields = {
@@ -106,7 +106,8 @@ class ProductView(ModelView):
     
     def on_model_change(self, form, product, is_created):
         """Обработка загрузки файла при создании/редактировании товара"""
-        file = form.file.data
+        file_field = getattr(form, 'file', None)
+        file = file_field.data if file_field else None
         if file and file.filename:
             if allowed_file(file.filename):
                 filename = secure_filename(file.filename)
