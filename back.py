@@ -168,7 +168,7 @@ class CategoryView(ModelView):
 
 class ProductView(ModelView):
     column_list = ('id', 'title', 'price', 'show_contacts', 'image_path')
-    form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'file')
+    form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'gallery', 'file')
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
     column_formatters = {
@@ -292,6 +292,15 @@ admin.add_view(SiteSettingsView(SiteSettings, db, name='⚙️ Сайт и ко�
 def index():
     """Отдаёт главную страницу сайта."""
     return render_template('index.html')
+
+
+@app.route('/product/<int:product_id>')
+def product_page(product_id):
+    product = db.get_or_404(Product, product_id)
+    category = db.session.get(Category, product.category_id) if product.category_id else None
+    images = [product.image_path] if product.image_path else []
+    images.extend(json.loads(product.gallery_paths or '[]'))
+    return render_template('product.html', product=product, category=category, images=list(dict.fromkeys(images)))
 
 
 @app.route('/api/categories', methods=['GET'])

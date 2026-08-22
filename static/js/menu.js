@@ -41,7 +41,7 @@ function renderProducts() {
   if (!activeAudience) { element.innerHTML = ''; return; }
   const list = products.filter(product => product.audience === activeAudience && (activeCategory === null || product.category_id === activeCategory));
   if (!list.length) { element.innerHTML = '<div class="loading">В этой категории пока нет материалов.</div>'; return; }
-  element.innerHTML = list.map(product => `<article class="product-card product-preview" onclick="openProduct(${product.id})" tabindex="0" role="button"><div class="product-image">${product.image_path ? `<img src="/uploads/${encodeURIComponent(product.image_path)}" alt="">` : '<div class="placeholder">✦</div>'}</div><div class="product-body"><div class="product-meta">${esc(product.category_name || 'Материал')}</div><h3>${esc(product.title)}</h3></div></article>`).join('');
+  element.innerHTML = list.map(product => `<a class="product-card product-preview" href="/product/${product.id}"><div class="product-image">${product.image_path ? `<img src="/uploads/${encodeURIComponent(product.image_path)}" alt="">` : '<div class="placeholder">✦</div>'}</div><div class="product-body"><div class="product-meta">${esc(product.category_name || 'Материал')}</div><h3>${esc(product.title)}</h3></div></a>`).join('');
 }
 function openProduct(id) {
   const product = products.find(item => item.id === id);

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ product.title }}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/product.css">
+</head>
+<body class="product-page">
+  <header class="product-header"><a href="/">← Вернуться к материалам</a></header>
+  <main class="product-detail-page">
+    <section class="product-viewer">
+      <div class="product-main-image">
+        {% if images %}<img id="mainProductImage" src="/uploads/{{ images[0]|urlencode }}" alt="{{ product.title }}">{% else %}<div class="detail-placeholder">Нет изображения</div>{% endif %}
+        {% if images|length > 1 %}<button class="gallery-arrow gallery-prev" type="button" aria-label="Предыдущее фото">‹</button><button class="gallery-arrow gallery-next" type="button" aria-label="Следующее фото">›</button>{% endif %}
+      </div>
+      {% if images|length > 1 %}<div class="product-thumbnails">{% for image in images %}<button type="button" class="thumbnail {% if loop.first %}active{% endif %}" data-image="/uploads/{{ image|urlencode }}"><img src="/uploads/{{ image|urlencode }}" alt=""></button>{% endfor %}</div>{% endif %}
+    </section>
+    <section class="product-info">
+      {% if category %}<div class="product-meta">{{ category.name }}</div>{% endif %}
+      <h1>{{ product.title }}</h1>
+      {% if product.price %}<div class="product-page-price">{{ product.price }} ₽</div>{% endif %}
+      {% if product.description %}<div class="product-description">{{ product.description }}</div>{% endif %}
+      <div class="order-box">
+        <h2>Заявка</h2>
+        <form id="productOrderForm">
+          <input name="name" placeholder="Ваше имя" required>
+          <input name="contact" placeholder="Телефон / Telegram" required>
+          <button class="btn btn-primary" type="submit">Отправить заявку</button>
+          <div id="orderMessage" class="form-message"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="/static/js/product.js"></script>
+</body>
+</html>
