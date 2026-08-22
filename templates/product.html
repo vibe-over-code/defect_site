@@ -6,6 +6,20 @@
   <title>{{ product.title }}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/product.css">
+  <style>
+    /* Показываем изображение целиком, подстраивая высоту блока под его пропорции. */
+    .product-main-image {
+      aspect-ratio: auto;
+      height: auto;
+      min-height: 220px;
+    }
+    .product-main-image > img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      padding: 10px;
+    }
+  </style>
 </head>
 <body class="product-page">
   <header class="product-header"><a href="/">← Вернуться к материалам</a></header>

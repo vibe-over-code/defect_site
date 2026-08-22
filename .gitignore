@@ -179,3 +179,29 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# === Project-specific ===
+
+# Database (SQLite)
+instance/*.db
+instance/*.sqlite
+instance/*.sqlite3
+instance/*.db-journal
+
+# Uploaded files
+uploads/*
+!uploads/.gitkeep
+
+# Flask instance folder
+instance/
+
+# SMTP credentials — хранятся в БД, но на всякий случай
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE (optional, uncomment if needed)
+# .vscode/
+# .idea/
