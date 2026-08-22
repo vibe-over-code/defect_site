@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Инструменты Дефектолога</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav">
+    <a class="logo" href="/">Дефектолог<span>Pro</span></a>
+    <nav>
+      <a href="#catalog">Каталог</a>
+      <a href="#advantages">Преимущества</a>
+      <a href="#contacts">Контакты</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="hero">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+      <div class="hero-copy">
+        <div class="eyebrow">Материалы для специалистов</div>
+        <h1>Инструменты<br>Дефектолога</h1>
+        <p>Готовые материалы для дефектологов и логопедов. Экономьте время на подготовке к занятиям.</p>
+        <a class="btn btn-primary" href="#catalog">Смотреть материалы</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="advantages">
+    <div class="container">
+      <div class="section-head">
+        <div><span class="eyebrow">Почему удобно</span><h2>Наши преимущества</h2></div>
+        <p>Готовые решения для ежедневной работы — без долгих поисков и самостоятельной разработки.</p>
+      </div>
+      <div class="advantages">
+        <article><b>01</b><h3>Сразу к делу</h3><p>Шаблоны обследований, карточки, диагностические таблицы и комплексы заданий.</p></article>
+        <article><b>02</b><h3>Под программы</h3><p>Материалы учитывают требования адаптированных программ и варианты 7.1 и 7.2.</p></article>
+        <article><b>03</b><h3>Удобный поиск</h3><p>Категории помогают быстро найти инструмент по возрасту и направлению работы.</p></article>
+        <article><b>04</b><h3>Экономия времени</h3><p>Короткое описание и понятная структура каждого материала — подготовка быстрее.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section catalog" id="catalog">
+    <div class="container">
+      <div class="section-head">
+        <div><span class="eyebrow">Каталог</span><h2>Материалы</h2></div>
+        <div id="categoryFilters" class="filters"></div>
+      </div>
+      <div id="products" class="product-grid"><div class="loading">Загрузка каталога…</div></div>
+    </div>
+  </section>
+
+  <section class="section contact-section" id="contacts">
+    <div class="container contact-box">
+      <div><span class="eyebrow">Остались вопросы?</span><h2>Свяжитесь с нами</h2><p id="contactText">Мы поможем подобрать материал для вашей задачи.</p></div>
+      <div class="contact-links" id="contactLinks"></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="container">© <span id="year"></span> ДефектологPro</div></footer>
+
+<div class="modal" id="orderModal" aria-hidden="true">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card">
+    <button class="modal-close" data-close>×</button>
+    <span class="eyebrow">Заявка</span>
+    <h2 id="modalProduct">Материал</h2>
+    <form id="orderForm">
+      <input type="hidden" id="productInput">
+      <label>Ваше имя<input name="name" required></label>
+      <label>Телефон / Telegram<input name="contact" required></label>
+      <button class="btn btn-primary" type="submit">Отправить заявку</button>
+      <div class="form-message" id="formMessage"></div>
+    </form>
+  </div>
+</div>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

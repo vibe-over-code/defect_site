@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.base import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
-from wtforms import FileField, SelectField
+from wtforms import FileField
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect
 import os
@@ -40,7 +40,6 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     product_type = db.Column(db.String(50), nullable=False)
-    audience = db.Column(db.String(50), nullable=False, default='defectologists')
     def __str__(self):
         return self.name
 
@@ -118,30 +117,18 @@ def ensure_schema():
         if 'hero_image_path' not in columns:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE site_settings ADD COLUMN hero_image_path VARCHAR(255)'))
-    if 'category' in tables:
-        columns = {c['name'] for c in inspector.get_columns('category')}
-        if 'audience' not in columns:
-            with db.engine.begin() as conn:
-                conn.execute(text("ALTER TABLE category ADD COLUMN audience VARCHAR(50) NOT NULL DEFAULT 'defectologists'"))
 
 
 class InstructionsView(BaseView):
     @expose('/')
     def index(self):
-        return self.render('admin/instructions_beginner.html')
+        return self.render('admin/instructions.html')
 
 
 class CategoryView(ModelView):
-    column_list = ('id', 'name', 'audience', 'product_type')
-    form_columns = ('name', 'audience', 'product_type')
+    column_list = ('id', 'name', 'product_type')
+    form_columns = ('name', 'product_type')
     column_searchable_list = ('name',)
-    form_extra_fields = {
-        'audience': SelectField('Раздел меню', choices=[
-            ('defectologists', 'Дефектологам'),
-            ('speech_therapists', 'Логопедам'),
-            ('school', 'Подготовка к школе'),
-        ], default='defectologists')
-    }
 
 
 class ProductView(ModelView):
@@ -208,7 +195,7 @@ class SiteSettingsView(ModelView):
             settings.hero_image_path = filename
 
 
-admin = Admin(app, name='Админка: Материалы для занятий')
+admin = Admin(app, name='Админка: ДефектологPro')
 admin.add_view(InstructionsView(name='📖 Инструкция', endpoint='instructions'))
 admin.add_view(CategoryView(Category, db, name='Категории'))
 admin.add_view(ProductView(Product, db, name='Управление товарами'))
@@ -219,7 +206,7 @@ admin.add_view(SiteSettingsView(SiteSettings, db, name='Настройки са�
 @app.route('/')
 def index():
     """Отдаёт главную страницу сайта."""
-    return render_template('index.html')
+    return app.send_static_file('index.html')
 
 
 @app.route('/api/categories', methods=['GET'])
@@ -229,8 +216,7 @@ def get_categories():
     result = []
     for cat in categories:
         count = Product.query.filter_by(category_id=cat.id, type=cat.product_type).count()
-        result.append({'id': cat.id, 'name': cat.name, 'audience': cat.audience,
-                       'type': cat.product_type, 'products_count': count})
+        result.append({'id': cat.id, 'name': cat.name, 'type': cat.product_type, 'products_count': count})
     return jsonify(result)
 
 
@@ -244,7 +230,6 @@ def get_products():
         result.append({
             'id': p.id, 'title': p.title, 'description': p.description,
             'price': p.price, 'type': p.type, 'category_id': p.category_id,
-            'audience': cat.audience if cat else 'defectologists',
             'category_name': cat.name if cat else 'Без категории',
             'show_contacts': p.show_contacts, 'file_path': p.file_path,
             'image_path': p.image_path
@@ -318,40 +303,6 @@ with app.app_context():
             Category(name='Подготовка к школе', product_type='school'),
         ])
         db.session.commit()
-
-    default_categories = [
-        ('Дефектологам', 'Диагностика', 'diagnostics'),
-        ('Дефектологам', 'Дидактические игры', 'didactic_games'),
-        ('Дефектологам', 'Рабочие тетради', 'workbooks'),
-        ('Дефектологам', 'Рабочие листы', 'worksheets'),
-        ('Дефектологам', 'Документы дефектолога', 'documents'),
-        ('Дефектологам', 'Программы коррекционных курсов', 'courses'),
-        ('Дефектологам', 'Вебинары', 'webinars'),
-        ('Логопедам', 'Диагностика', 'diagnostics'),
-        ('Логопедам', 'Дидактические игры', 'didactic_games'),
-        ('Логопедам', 'Документы логопеда', 'documents'),
-        ('Логопедам', 'Программы коррекционных курсов', 'courses'),
-        ('Логопедам', 'Рабочие листы', 'worksheets'),
-        ('Подготовка к школе', 'Чтение', 'school_reading'),
-        ('Подготовка к школе', 'Буквы и слоги', 'school_letters'),
-        ('Подготовка к школе', 'Математический счёт', 'school_math'),
-        ('Подготовка к школе', 'Развитие графо-моторных навыков', 'school_motor'),
-        ('Подготовка к школе', 'Подготовка руки к письму', 'school_writing'),
-        ('Подготовка к школе', 'Диагностика готовности к школе', 'school_diagnostics'),
-        ('Подготовка к школе', 'Геометрический материал', 'school_geometry'),
-    ]
-    legacy_audiences = {'Дефектологам': 'defectologists', 'Логопедам': 'speech_therapists',
-                        'Подготовка к школе': 'school'}
-    for legacy_name, legacy_audience in legacy_audiences.items():
-        for legacy_category in Category.query.filter_by(name=legacy_name).all():
-            legacy_category.audience = legacy_audience
-    for audience_name, category_name, product_type in default_categories:
-        audience = {'Дефектологам': 'defectologists', 'Логопедам': 'speech_therapists',
-                    'Подготовка к школе': 'school'}[audience_name]
-        exists = Category.query.filter_by(name=category_name, audience=audience).first()
-        if not exists:
-            db.session.add(Category(name=category_name, product_type=product_type, audience=audience))
-    db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
