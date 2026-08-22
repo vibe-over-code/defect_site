@@ -1,0 +1,27 @@
+/* Плавная навигация и ясная подсветка выбранного раздела */
+.audience-card,.category-card,.product-card,.btn,nav a{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease,background-color .25s ease,color .25s ease,opacity .25s ease}
+.audience-card{position:relative;overflow:hidden;background:linear-gradient(145deg,#fff 0%,#fff 70%,#eef8f5 100%)}
+.audience-card::after{content:'';position:absolute;width:130px;height:130px;right:-55px;bottom:-60px;border-radius:50%;background:var(--accent);opacity:.08;transition:transform .35s ease,opacity .35s ease}
+.audience-card:hover{transform:translateY(-7px);box-shadow:0 22px 45px rgba(45,156,154,.18)}
+.audience-card:hover::after{transform:scale(1.5);opacity:.16}
+.audience-card.active{transform:translateY(-5px);border:2px solid var(--accent);box-shadow:0 0 0 5px rgba(45,156,154,.12),0 24px 50px rgba(45,156,154,.22)}
+.audience-card.active::before{content:'✓';position:absolute;z-index:1;right:18px;top:16px;width:29px;height:29px;border-radius:50%;background:var(--accent);color:#fff;text-align:center;line-height:29px;font-weight:800}
+.audience-card:focus-visible,.category-card:focus-visible,.btn:focus-visible,nav a:focus-visible{outline:3px solid rgba(244,200,77,.9);outline-offset:4px}
+.audience-card strong{position:relative;z-index:1}
+.category-grid{animation:section-in .35s ease both}
+.category-card{position:relative;overflow:hidden}
+.category-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 10px 24px rgba(46,55,57,.1)}
+.category-card.active{border-color:var(--ink);box-shadow:0 0 0 4px rgba(37,51,58,.12);transform:translateY(-2px)}
+.category-card.active::after{content:'✓';position:absolute;right:12px;top:10px;color:var(--accent2);font-weight:900}
+.product-card{animation:card-in .45s ease both}
+.product-card:nth-child(2){animation-delay:.05s}.product-card:nth-child(3){animation-delay:.1s}.product-card:nth-child(4){animation-delay:.15s}.product-card:nth-child(5){animation-delay:.2s}.product-card:hover{transform:translateY(-6px);box-shadow:0 24px 55px rgba(46,55,57,.16)}
+.product-image img{transition:transform .5s ease}.product-card:hover .product-image img{transform:scale(1.05)}
+.btn-primary:hover{background:#23817f;transform:translateY(-2px);box-shadow:0 14px 30px rgba(45,156,154,.35)}
+nav a:hover{color:var(--accent);transform:translateY(-1px)}
+.hero-copy{animation:hero-in .7s ease both}.advantages article{transition:transform .25s ease,box-shadow .25s ease}.advantages article:hover{transform:translateY(-5px);box-shadow:0 20px 42px rgba(46,55,57,.14)}
+@keyframes hero-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes section-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes card-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:850px){.advantages{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.advantages{grid-template-columns:1fr}.audience-card:hover,.audience-card.active{transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}

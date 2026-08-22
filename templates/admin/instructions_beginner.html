@@ -1,21 +1,214 @@
 {% extends 'admin/master.html' %}
 {% block body %}
-<div class="container" style="padding:30px;max-width:980px">
-  <h2>Инструкция</h2>
-  <p>Здесь простыми шагами описано, как наполнить сайт материалами.</p>
-  <h3>1. Сначала создайте категории</h3>
-  <p>Откройте слева раздел «Категории» и нажмите «Создать». В поле «Название» напишите понятное название, например «Дидактические игры». В поле «Раздел меню» выберите, где посетитель будет искать эту категорию: «Дефектологам», «Логопедам» или «Подготовка к школе». Поле «Тип товара» нужно для внутренней сортировки — можно выбрать подходящий вариант.</p>
-  <h3>2. Затем добавьте товар</h3>
-  <p>Откройте «Управление товарами» → «Создать». Заполните название, короткое описание и цену. В поле «Тип» выберите тип материала, а в «Категория» — категорию из нужного раздела меню. Именно категория определяет, под каким из трёх больших меню появится карточка.</p>
-  <h3>3. Добавьте картинку</h3>
-  <p>В поле изображения загрузите PNG, JPG, JPEG или WEBP. Лучше использовать квадратную или горизонтальную картинку без мелкого текста. Если картинку не добавить, на карточке будет аккуратная заглушка.</p>
-  <h3>4. Проверьте результат</h3>
-  <p>После сохранения откройте главную страницу в новой вкладке. Нажмите одно из трёх больших меню, затем категорию. В списке появится карточка товара. Если карточки нет, проверьте, что товар сохранён и ему назначена категория.</p>
-  <h3>5. Заявки клиентов</h3>
-  <p>Новые обращения находятся в разделе «Заявки (Лиды)». Там можно посмотреть имя, контакт, выбранный материал и дату обращения.</p>
-  <h3>6. Контакты и шапка сайта</h3>
-  <p>В разделе «Настройки сайта» можно изменить телефон, электронную почту, ссылку Telegram и большую картинку в шапке. Не меняйте токен бота и ID чата, если не уверены, что именно они должны быть изменены.</p>
-  <h3>Полезное правило</h3>
-  <p>Сначала создайте раздел и категорию, потом товар. Если категория относится к логопедам или подготовке к школе, обязательно выберите соответствующий раздел меню — тогда посетители найдут материал в правильном месте.</p>
+<style>
+  .admin-doc { padding: 30px; max-width: 960px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .admin-doc h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 24px; }
+  .admin-doc h3 { color: #2980b9; margin-top: 30px; margin-bottom: 12px; }
+  .admin-doc p, .admin-doc li { line-height: 1.7; color: #34495e; font-size: 15px; }
+  .admin-doc ul, .admin-doc ol { padding-left: 20px; }
+  .admin-doc li { margin-bottom: 6px; }
+
+  .doc-section { background: #fff; border: 1px solid #e1e8ed; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .doc-section h3 { margin-top: 0; }
+
+  .step-number {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%; background: #3498db;
+    color: #fff; font-weight: bold; font-size: 14px; margin-right: 8px;
+    flex-shrink: 0; vertical-align: middle;
+  }
+  .step-title { display: flex; align-items: center; margin-bottom: 10px; }
+  .step-title h3 { margin: 0; }
+
+  .tip-box {
+    background: #eaf7ee; border-left: 4px solid #27ae60;
+    padding: 12px 16px; border-radius: 0 6px 6px 0;
+    margin: 14px 0; font-size: 14px;
+  }
+  .tip-box.warning {
+    background: #fef9e7; border-left-color: #f39c12;
+  }
+  .tip-box.danger {
+    background: #fdedec; border-left-color: #e74c3c;
+  }
+
+  .field-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .field-table th { background: #ecf0f1; text-align: left; padding: 10px 12px; color: #2c3e50; }
+  .field-table td { padding: 9px 12px; border-top: 1px solid #e1e8ed; }
+  .field-table code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #c0392b; }
+
+  .nav-breadcrumb { color: #7f8c8d; font-size: 13px; margin-bottom: 4px; }
+  .nav-breadcrumb span { color: #2c3e50; font-weight: 600; }
+</style>
+
+<div class="admin-doc">
+  <h2>📖 Инструкция по работе с админкой</h2>
+  <p>Эта админка управляет сайтом с материалами для занятий. Ниже — пошаговое описание всех разделов и полей.</p>
+
+  <!-- ===== ОБЗОР ===== -->
+  <div class="doc-section">
+    <h3>🗂 Обзор разделов</h3>
+    <p>В левом меню админки вы видите пять разделов:</p>
+    <table class="field-table">
+      <tr><th>Раздел</th><th>Зачем</th></tr>
+      <tr><td><strong>📖 Инструкция</strong></td><td>Вы сейчас здесь — справочные материалы</td></tr>
+      <tr><td><strong>Категории</strong></td><td>Создание групп товаров (например «Дидактические игры», «Рабочие листы»)</td></tr>
+      <tr><td><strong>Управление товарами</strong></td><td>Добавление и редактирование карточек материалов</td></tr>
+      <tr><td><strong>Заявки (Лиды)</strong></td><td>Просмотр обращений клиентов</td></tr>
+      <tr><td><strong>Настройки сайта</strong></td><td>Контакты, Telegram-бот, изображение шапки</td></tr>
+    </table>
+  </div>
+
+  <!-- ===== КАТЕГОРИИ ===== -->
+  <div class="doc-section">
+    <div class="step-title"><span class="step-number">1</span><h3>Категории</h3></div>
+    <p class="nav-breadcrumb">Меню → <span>Категории</span> → кнопка «Создать»</p>
+
+    <p>Категории группируют товары и определяют, в каком из трёх разделов сайта они появятся.</p>
+
+    <table class="field-table">
+      <tr><th>Поле</th><th>Описание</th></tr>
+      <tr><td><code>name</code></td><td>Название категории — оно будет видно на сайте. Пример: «Рабочие листы», «Диагностика»</td></tr>
+      <tr><td><code>Раздел меню</code></td><td>Определяет, под каким большим разделом появится категория:<br>
+        • <strong>Дефектологам</strong> — для дефектологов<br>
+        • <strong>Логопедам</strong> — для логопедов<br>
+        • <strong>Подготовка к школе</strong> — для родителей и педагогов</td></tr>
+      <tr><td><code>product_type</code></td><td>Тип товара — внутренняя метка для сортировки. Должен совпадать с <code>product_type</code> категорий по умолчанию (например <code>worksheets</code>, <code>diagnostics</code>, <code>didactic_games</code>)</td></tr>
+    </table>
+
+    <div class="tip-box">
+      💡 <strong>Совет:</strong> Если вы создаёте категорию «Рабочие листы» для дефектологов, используйте <code>name = «Рабочие листы»</code>, <code>Раздел меню = Дефектологам</code>, <code>product_type = worksheets</code>.
+    </div>
+
+    <div class="tip-box warning">
+      ⚠️ <strong>Важно:</strong> Поля <code>product_type</code> должно совпадать с тем, что ожидает API сайта. Список допустимых значений:<br>
+      <code>diagnostics</code>, <code>courses</code>, <code>didactic_games</code>, <code>documents</code>, <code>worksheets</code>, <code>workbooks</code>, <code>webinars</code>, <code>school_reading</code>, <code>school_letters</code>, <code>school_math</code>, <code>school_motor</code>, <code>school_writing</code>, <code>school_diagnostics</code>, <code>school_geometry</code>
+    </div>
+  </div>
+
+  <!-- ===== ТОВАРЫ ===== -->
+  <div class="doc-section">
+    <div class="step-title"><span class="step-number">2</span><h3>Управление товарами</h3></div>
+    <p class="nav-breadcrumb">Меню → <span>Управление товарами</span> → кнопка «Создать»</p>
+
+    <p>Здесь создаются карточки материалов, которые видят посетители сайта.</p>
+
+    <table class="field-table">
+      <tr><th>Поле</th><th>Описание</th></tr>
+      <tr><td><code>title</code></td><td>Название материала — заголовок карточки. Пример: «Рабочий лист «Алфавит»»</td></tr>
+      <tr><td><code>description</code></td><td>Краткое описание материала. Здесь можно указать возраст, цель, объём</td></tr>
+      <tr><td><code>price</code></td><td>Цена. Можно оставить пустым, если бесплатно</td></tr>
+      <tr><td><code>type</code></td><td>Тип материала — внутренняя метка (аналогично <code>product_type</code> у категорий)</td></tr>
+      <tr><td><code>Категория</code></td><td>Выберите категорию из списка. Именно она определяет, в каком разделе сайта появится карточка</td></tr>
+      <tr><td><code>Show contacts</code></td><td>Флажок: если включён — на карточке будут видны контакты продавца</td></tr>
+      <tr><td><code>Изображение карточки</code></td><td>Картинка для превью. Форматы: <strong>PNG, JPG, JPEG, WEBP</strong>. Рекомендуемый размер: 400×400 или 600×400 пикселей</td></tr>
+      <tr><td><code>Файл товара</code></td><td>Сам материал для скачивания. Форматы: <strong>PDF, ZIP, DOC, DOCX</strong>. Макс. размер — 25 МБ</td></tr>
+    </table>
+
+    <p><strong>Порядок действий при добавлении товара:</strong></p>
+    <ol>
+      <li>Заполните <code>title</code> и <code>description</code></li>
+      <li>Укажите цену (если есть) и тип</li>
+      <li>Выберите категорию — это самый важный шаг</li>
+      <li>Загрузите изображение карточки</li>
+      <li>Загрузите файл товара (если это downloadable-материал)</li>
+      <li>Нажмите «Save»</li>
+    </ol>
+
+    <div class="tip-box">
+      💡 <strong>Совет:</strong> Сначала загрузите файл и картинку — если загрузка не удалась, Flask-Admin покажет ошибку. Без изображения и файла карточка всё равно появится, но с заглушками.
+    </div>
+
+    <p><strong>Редактирование:</strong> Чтобы изменить товар, найдите его в списке (можно искать по названию или фильтровать по типу/флажку контактов), наведите на строку и нажмите иконку карандаша.</p>
+
+    <p><strong>Просмотр карточки на сайте:</strong> Откройте <code>http://ваш_сайт</code> → выберите раздел меню → категорию → карточку товара.</p>
+  </div>
+
+  <!-- ===== ЗАЯВКИ ===== -->
+  <div class="doc-section">
+    <div class="step-title"><span class="step-number">3</span><h3>Заявки (Лиды)</h3></div>
+    <p class="nav-breadcrumb">Меню → <span>Заявки (Лиды)</span></p>
+
+    <p>Здесь отображаются все обращения, которые оставили посетители сайта через форму заказа.</p>
+
+    <table class="field-table">
+      <tr><th>Поле</th><th>Описание</th></tr>
+      <tr><td><code>name</code></td><td>Имя клиента</td></tr>
+      <tr><td><code>contact</code></td><td>Контакт (телефон, email или Telegram)</td></tr>
+      <tr><td><code>product_name</code></td><td>Название материала, который запросил клиент</td></tr>
+      <tr><td><code>date</code></td><td>Дата и время обращения</td></tr>
+    </table>
+
+    <p><strong>Возможности:</strong></p>
+    <ul>
+      <li>Поиск по имени, контакту или названию товара (поле поиска сверху)</li>
+      <li>Сортировка по любому столбцу (клик по заголовку)</li>
+      <li>Экспорт в CSV: кнопка «Export» → CSV</li>
+      <li>Удаление заявок: отметьте чекбоксы → действие «Delete»</li>
+    </ul>
+
+    <div class="tip-box warning">
+      ⚠️ <strong>Уведомления в Telegram:</strong> Если в «Настройках сайта» заполнены <code>telegram_bot_token</code> и <code>telegram_chat_id</code>, каждая новая заявка автоматически дублируется сообщением в ваш Telegram-чат.
+    </div>
+  </div>
+
+  <!-- ===== НАСТРОЙКИ САЙТА ===== -->
+  <div class="doc-section">
+    <div class="step-title"><span class="step-number">4</span><h3>Настройки сайта</h3></div>
+    <p class="nav-breadcrumb">Меню → <span>Настройки сайта</span> → карандаш (редактировать)</p>
+
+    <p>Здесь настраиваются контакты и интеграция с Telegram. Запись одна — нажмите карандаш для редактирования.</p>
+
+    <table class="field-table">
+      <tr><th>Поле</th><th>Описание</th></tr>
+      <tr><td><code>sale_mode</code></td><td>Режим продаж: <code>lead_form</code> (форма заявки) или другой режим</td></tr>
+      <tr><td><code>admin_tg_username</code></td><td>Telegram-username админа (например <code>@misha</code>). Используется для прямой ссылки</td></tr>
+      <tr><td><code>phone</code></td><td>Телефон для контактов</td></tr>
+      <tr><td><code>email</code></td><td>Email для контактов</td></tr>
+      <tr><td><code>tg_username</code></td><td>Telegram-username для отображения на сайте</td></tr>
+      <tr><td><code>tg_link</code></td><td>Полная ссылка на Telegram-канал/личку (например <code>https://t.me/your_username</code>)</td></tr>
+      <tr><td><code>hero_image_path</code></td><td>Имя файла большой картинки в шапке сайта</td></tr>
+      <tr><td><code>Изображение шапки</code></td><td>Загрузить новую картинку для hero-секции (PNG/JPG/WEBP)</td></tr>
+    </table>
+
+    <p><strong>Настройка Telegram-уведомлений:</strong></p>
+    <ol>
+      <li>Откройте бота <code>@BotFather</code> в Telegram</li>
+      <li>Отправьте команду <code>/newbot</code> и следуйте инструкциям</li>
+      <li>Скопируйте <strong>API-токен</strong> (вида <code>123456:ABC-DEF...</code>)</li>
+      <li>Вставьте токен в поле <code>telegram_bot_token</code></li>
+      <li>Напишите боту любое сообщение</li>
+      <li>Откройте <code>https://api.telegram.org/botТОКЕН/getUpdates</code> в браузере</li>
+      <li>Найдите в ответе <code>"chat":{"id":-123456789}</code> — это ваш <code>telegram_chat_id</code></li>
+      <li>Вставьте ID в поле <code>telegram_chat_id</code></li>
+    </ol>
+
+    <div class="tip-box danger">
+      🚫 <strong>Не меняйте поля</strong> <code>telegram_bot_token</code> и <code>telegram_chat_id</code> без необходимости — неправильное значение сломает уведомления.
+    </div>
+  </div>
+
+  <!-- ===== ПОЛЕЗНЫЕ ССЫЛКИ ===== -->
+  <div class="doc-section">
+    <h3>🔧 Полезные ссылки</h3>
+    <ul>
+      <li><strong>Главная сайта:</strong> <code>http://localhost:5000</code> (локально)</li>
+      <li><strong>Админка:</strong> <code>http://localhost:5000/admin</code></li>
+      <li><strong>Загруженные файлы:</strong> <code>/uploads/имя_файла</code></li>
+    </ul>
+  </div>
+
+  <!-- ===== ЧАСТЫЕ ПРОБЛЕМЫ ===== -->
+  <div class="doc-section">
+    <h3>🐛 Частые проблемы</h3>
+    <table class="field-table">
+      <tr><th>Проблема</th><th>Решение</th></tr>
+      <tr><td>Товар не появился на сайте</td><td>Проверьте, что у товара назначена категория и категория относится к нужному разделу меню</td></tr>
+      <tr><td>Картинка не загружается</td><td>Убедитесь, что файл имеет формат PNG, JPG, JPEG или WEBP. Максимальный размер — 25 МБ</td></tr>
+      <tr><td>Файл товара не скачивается</td><td>Проверьте, что файл загружен корректно (PDF, ZIP, DOC, DOCX). Откройте <code>/uploads/имя_файла</code> напрямую</td></tr>
+      <tr><td>Уведомления в Telegram не приходят</td><td>Проверьте токен бота и chat_id. Убедитесь, что вы написали боту перед настройкой</td></tr>
+      <tr><td>Категория не отображается в API</td><td>Убедитесь, что <code>product_type</code> совпадает с ожидаемым значением (см. таблицу в разделе «Категории»)</td></tr>
+    </table>
+  </div>
 </div>
 {% endblock %}
