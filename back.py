@@ -132,24 +132,57 @@ class InstructionsView(BaseView):
 
 
 class CategoryView(ModelView):
-    column_list = ('id', 'name', 'audience', 'product_type')
+    column_list = ('id', 'name', 'audience')
     form_columns = ('name', 'audience', 'product_type')
     column_searchable_list = ('name',)
+    column_formatters = {'audience': lambda view, context, model, name: {
+        'defectologists': 'Дефектологам', 'speech_therapists': 'Логопедам',
+        'school': 'Подготовка к школе'
+    }.get(model.audience, model.audience)}
     form_extra_fields = {
         'audience': SelectField('Раздел меню', choices=[
             ('defectologists', 'Дефектологам'),
             ('speech_therapists', 'Логопедам'),
             ('school', 'Подготовка к школе'),
-        ], default='defectologists')
+        ], default='defectologists'),
+        'product_type': SelectField('Вид материала', choices=[
+            ('diagnostics', 'Диагностика'), ('didactic_games', 'Дидактические игры'),
+            ('courses', 'Программы коррекционных курсов'), ('documents', 'Документы'),
+            ('worksheets', 'Рабочие листы'), ('workbooks', 'Рабочие тетради'),
+            ('webinars', 'Вебинары'), ('school_reading', 'Чтение'),
+            ('school_letters', 'Буквы и слоги'), ('school_math', 'Математический счет'),
+            ('school_motor', 'Развитие графо-моторных навыков'),
+            ('school_writing', 'Подготовка руки к письму'),
+            ('school_diagnostics', 'Диагностика готовности к школе'),
+            ('school_geometry', 'Геометрический материал'),
+        ], default='documents')
     }
 
 
 class ProductView(ModelView):
-    column_list = ('id', 'title', 'type', 'category_id', 'show_contacts', 'price', 'image_path', 'file_path')
-    form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'file', 'file_path')
+    column_list = ('id', 'title', 'price', 'show_contacts')
+    form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'file')
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
+    form_args = {
+        'title': {'label': 'Название материала'},
+        'description': {'label': 'Короткое описание'},
+        'price': {'label': 'Цена'},
+        'category_id': {'label': 'Категория'},
+        'show_contacts': {'label': 'Показывать контакты'},
+    }
     form_extra_fields = {
+        'type': SelectField('Вид материала', choices=[
+            ('diagnostics', 'Диагностика'), ('didactic_games', 'Дидактические игры'),
+            ('courses', 'Программы коррекционных курсов'), ('documents', 'Документы'),
+            ('worksheets', 'Рабочие листы'), ('workbooks', 'Рабочие тетради'),
+            ('webinars', 'Вебинары'), ('school_reading', 'Чтение'),
+            ('school_letters', 'Буквы и слоги'), ('school_math', 'Математический счет'),
+            ('school_motor', 'Развитие графо-моторных навыков'),
+            ('school_writing', 'Подготовка руки к письму'),
+            ('school_diagnostics', 'Диагностика готовности к школе'),
+            ('school_geometry', 'Геометрический материал'),
+        ]),
         'image': FileField('Изображение карточки (PNG/JPG/WEBP)'),
         'file': FileField('Файл товара (PDF, ZIP, DOC)')
     }
@@ -209,11 +242,11 @@ class SiteSettingsView(ModelView):
 
 
 admin = Admin(app, name='Админка: Материалы для занятий')
-admin.add_view(InstructionsView(name='📖 Инструкция', endpoint='instructions'))
-admin.add_view(CategoryView(Category, db, name='Категории'))
-admin.add_view(ProductView(Product, db, name='Управление товарами'))
-admin.add_view(LeadView(Lead, db, name='Заявки (Лиды)'))
-admin.add_view(SiteSettingsView(SiteSettings, db, name='Настройки сайта'))
+admin.add_view(InstructionsView(name='📖 С чего начать', endpoint='instructions'))
+admin.add_view(CategoryView(Category, db, name='🗂 Категории'))
+admin.add_view(ProductView(Product, db, name='🛒 Материалы'))
+admin.add_view(LeadView(Lead, db, name='📥 Заявки'))
+admin.add_view(SiteSettingsView(SiteSettings, db, name='⚙️ Сайт и контакты'))
 
 
 @app.route('/')
@@ -324,17 +357,17 @@ with app.app_context():
         ('Дефектологам', 'Дидактические игры', 'didactic_games'),
         ('Дефектологам', 'Рабочие тетради', 'workbooks'),
         ('Дефектологам', 'Рабочие листы', 'worksheets'),
-        ('Дефектологам', 'Документы дефектолога', 'documents'),
+        ('Дефектологам', 'Документы Дефектолога', 'documents'),
         ('Дефектологам', 'Программы коррекционных курсов', 'courses'),
         ('Дефектологам', 'Вебинары', 'webinars'),
         ('Логопедам', 'Диагностика', 'diagnostics'),
         ('Логопедам', 'Дидактические игры', 'didactic_games'),
-        ('Логопедам', 'Документы логопеда', 'documents'),
+        ('Логопедам', 'Документы Логопеда', 'documents'),
         ('Логопедам', 'Программы коррекционных курсов', 'courses'),
         ('Логопедам', 'Рабочие листы', 'worksheets'),
         ('Подготовка к школе', 'Чтение', 'school_reading'),
         ('Подготовка к школе', 'Буквы и слоги', 'school_letters'),
-        ('Подготовка к школе', 'Математический счёт', 'school_math'),
+        ('Подготовка к школе', 'Математический счет', 'school_math'),
         ('Подготовка к школе', 'Развитие графо-моторных навыков', 'school_motor'),
         ('Подготовка к школе', 'Подготовка руки к письму', 'school_writing'),
         ('Подготовка к школе', 'Диагностика готовности к школе', 'school_diagnostics'),
@@ -345,6 +378,15 @@ with app.app_context():
     for legacy_name, legacy_audience in legacy_audiences.items():
         for legacy_category in Category.query.filter_by(name=legacy_name).all():
             legacy_category.audience = legacy_audience
+    canonical_names = {
+        ('defectologists', 'документы дефектолога'): 'Документы Дефектолога',
+        ('speech_therapists', 'документы логопеда'): 'Документы Логопеда',
+        ('school', 'математический счёт'): 'Математический счет',
+    }
+    for category in Category.query.all():
+        canonical = canonical_names.get((category.audience, category.name.lower()))
+        if canonical:
+            category.name = canonical
     for audience_name, category_name, product_type in default_categories:
         audience = {'Дефектологам': 'defectologists', 'Логопедам': 'speech_therapists',
                     'Подготовка к школе': 'school'}[audience_name]

@@ -39,9 +39,22 @@
 
   .nav-breadcrumb { color: #7f8c8d; font-size: 13px; margin-bottom: 4px; }
   .nav-breadcrumb span { color: #2c3e50; font-weight: 600; }
+  .quick-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:0 0 28px; }
+  .quick-actions a { display:flex; flex-direction:column; gap:5px; padding:18px; border:1px solid #dce5ea; border-radius:12px; background:#fff; color:#2c3e50; text-decoration:none; font-size:26px; transition:.2s; }
+  .quick-actions a:hover { transform:translateY(-3px); border-color:#3498db; box-shadow:0 8px 22px rgba(52,152,219,.16); }
+  .quick-actions strong { font-size:16px; }
+  .quick-actions span { color:#7f8c8d; font-size:13px; }
+  @media(max-width:800px){.quick-actions{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:500px){.quick-actions{grid-template-columns:1fr}}
 </style>
 
 <div class="admin-doc">
+  <div class="quick-actions">
+    <a href="{{ url_for('category.index_view') }}">🗂<strong>Категории</strong><span>Создать раздел</span></a>
+    <a href="{{ url_for('product.index_view') }}">🛒<strong>Материалы</strong><span>Добавить карточку</span></a>
+    <a href="{{ url_for('lead.index_view') }}">📥<strong>Заявки</strong><span>Посмотреть обращения</span></a>
+    <a href="{{ url_for('sitesettings.index_view') }}">⚙️<strong>Сайт и контакты</strong><span>Изменить контакты</span></a>
+  </div>
   <h2>📖 Инструкция по работе с админкой</h2>
   <p>Эта админка управляет сайтом с материалами для занятий. Ниже — пошаговое описание всех разделов и полей.</p>
 

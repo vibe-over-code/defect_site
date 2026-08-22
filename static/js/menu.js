@@ -5,6 +5,11 @@ let activeCategory = null;
 
 const $ = selector => document.querySelector(selector);
 const audienceNames = { defectologists: 'Дефектологам', speech_therapists: 'Логопедам', school: 'Подготовка к школе' };
+const categoryOrder = {
+  defectologists: ['Диагностика', 'Дидактические игры', 'Программы коррекционных курсов', 'Документы Дефектолога', 'Рабочие листы', 'Рабочие тетради', 'Вебинары'],
+  speech_therapists: ['Диагностика', 'Дидактические игры', 'Документы Логопеда', 'Программы коррекционных курсов', 'Рабочие листы', 'Рабочие тетради'],
+  school: ['Чтение', 'Буквы и слоги', 'Математический счет', 'Развитие графо-моторных навыков', 'Подготовка руки к письму', 'Диагностика готовности к школе', 'Геометрический материал']
+};
 async function api(url, options) { const response = await fetch(url, options); const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Ошибка запроса'); return data; }
 function esc(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
 function renderAudienceMenus() {
@@ -14,9 +19,14 @@ function renderAudienceMenus() {
 }
 function renderCategories() {
   const element = $('#categoryFilters');
-  const available = categories.filter(category => category.audience === activeAudience);
+  const names = categoryOrder[activeAudience] || [];
+  const unique = new Map();
+  categories.filter(category => category.audience === activeAudience && names.includes(category.name)).forEach(category => {
+    if (!unique.has(category.name)) unique.set(category.name, category);
+  });
+  const available = [...unique.values()].sort((a, b) => names.indexOf(a.name) - names.indexOf(b.name));
   if (!activeAudience) { element.innerHTML = ''; return; }
-  element.innerHTML = `<button class="category-card all-category ${activeCategory === null ? 'active' : ''}" data-category="all"><strong>Все материалы</strong></button>` + available.map(category => `<button class="category-card ${activeCategory === category.id ? 'active' : ''}" data-category="${category.id}"><strong>${esc(category.name)}</strong><span>${category.products_count}</span></button>`).join('');
+  element.innerHTML = available.map(category => `<button class="category-card ${activeCategory === category.id ? 'active' : ''}" data-category="${category.id}"><strong>${esc(category.name)}</strong></button>`).join('');
   element.querySelectorAll('[data-category]').forEach(button => button.addEventListener('click', () => { activeCategory = button.dataset.category === 'all' ? null : Number(button.dataset.category); renderCategories(); renderProducts(); }));
 }
 function renderProducts() {
