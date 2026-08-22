@@ -11,6 +11,9 @@ from urllib.parse import quote
 import os
 import json
 import requests
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -79,6 +82,11 @@ class SiteSettings(db.Model):
     tg_username = db.Column(db.String(100), default='@ваша_телега')
     tg_link = db.Column(db.String(200), default='https://t.me/your_username')
     hero_image_path = db.Column(db.String(255), default='hero.png')
+    smtp_host = db.Column(db.String(200), default='smtp.gmail.com')
+    smtp_port = db.Column(db.Integer, default=587)
+    smtp_login = db.Column(db.String(200), default='')
+    smtp_password = db.Column(db.String(200), default='')
+    smtp_use_tls = db.Column(db.Boolean, default=True)
 
 
 def allowed_file(filename):
@@ -125,6 +133,16 @@ def ensure_schema():
         if 'hero_image_path' not in columns:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE site_settings ADD COLUMN hero_image_path VARCHAR(255)'))
+        smtp_cols = ['smtp_host', 'smtp_port', 'smtp_login', 'smtp_password', 'smtp_use_tls']
+        for col in smtp_cols:
+            if col not in columns:
+                with db.engine.begin() as conn:
+                    if col == 'smtp_port':
+                        conn.execute(text(f'ALTER TABLE site_settings ADD COLUMN {col} INTEGER DEFAULT 587'))
+                    elif col == 'smtp_use_tls':
+                        conn.execute(text(f"ALTER TABLE site_settings ADD COLUMN {col} BOOLEAN DEFAULT 1"))
+                    else:
+                        conn.execute(text(f'ALTER TABLE site_settings ADD COLUMN {col} VARCHAR(200) DEFAULT \'\''))
     if 'category' in tables:
         columns = {c['name'] for c in inspector.get_columns('category')}
         if 'audience' not in columns:
@@ -260,7 +278,8 @@ class LeadView(ModelView):
 
 
 class SiteSettingsView(ModelView):
-    form_columns = ('sale_mode', 'admin_tg_username', 'telegram_bot_token', 'telegram_chat_id', 'phone', 'email', 'tg_username', 'tg_link', 'hero_image')
+    form_columns = ('sale_mode', 'admin_tg_username', 'telegram_bot_token', 'telegram_chat_id', 'phone', 'email', 'tg_username', 'tg_link', 'hero_image',
+                    'smtp_host', 'smtp_port', 'smtp_login', 'smtp_password', 'smtp_use_tls')
     column_list = ('id', 'phone', 'email', 'tg_username', 'hero_image_path')
     form_extra_fields = {'hero_image': FileField('Картинка большой шапки (PNG/JPG/WEBP)')}
     can_create = False
@@ -351,9 +370,60 @@ def get_settings():
     })
 
 
+def send_order_email(name, contact, product):
+    """Отправляет уведомление о новой заявке на email через SMTP."""
+    settings = SiteSettings.query.first()
+    if not settings:
+        return
+
+    to_email = settings.email
+    smtp_host = settings.smtp_host or 'smtp.gmail.com'
+    smtp_port = settings.smtp_port or 587
+    smtp_login = settings.smtp_login or ''
+    smtp_password = settings.smtp_password or ''
+    use_tls = settings.smtp_use_tls
+
+    if not to_email or to_email == 'info@example.com':
+        return
+    if not smtp_login or not smtp_password:
+        app.logger.warning('SMTP login или пароль не настроены, email не отправлен')
+        return
+
+    subject = f"🚨 Новая заявка: {product}"
+    body = f"""Новая заявка на сайте!
+
+👤 Имя: {name}
+📞 Контакт: {contact}
+📦 Товар: {product}
+📅 Дата: {db.func.current_timestamp()}
+"""
+
+    msg = MIMEMultipart()
+    msg['From'] = smtp_login
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+    try:
+        if use_tls:
+            server = smtplib.SMTP(smtp_host, smtp_port)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+        else:
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port or 465)
+
+        server.login(smtp_login, smtp_password)
+        server.sendmail(smtp_login, to_email, msg.as_string())
+        server.quit()
+        app.logger.info(f'Email отправлен на {to_email}')
+    except Exception:
+        app.logger.exception('Email notification failed')
+
+
 @app.route('/api/new_order', methods=['POST'])
 def new_order():
-    """Принимает заявку, сохраняет её в БД и отправляет уведомление в Telegram."""
+    """Принимает заявку, сохраняет её в БД и отправляет уведомление в Telegram и на email."""
     data = request.get_json(silent=True) or {}
     name = (data.get('name') or '').strip()
     contact = (data.get('contact') or '').strip()
@@ -365,6 +435,10 @@ def new_order():
     db.session.add(lead)
     db.session.commit()
 
+    # Отправка на email
+    send_order_email(name, contact, product)
+
+    # Отправка в Telegram
     settings = SiteSettings.query.first()
     if settings and settings.telegram_bot_token and settings.telegram_chat_id and settings.telegram_bot_token != 'ТОКЕН_ОТ_BOTFATHER':
         msg = f"🚨 НОВЫЙ ЗАКАЗ!\n👤 Имя: {name}\n📞 Контакт: {contact}\n📦 Товар: {product}"

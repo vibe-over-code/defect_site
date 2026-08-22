@@ -177,11 +177,16 @@
       <tr><td><code>sale_mode</code></td><td>Режим продаж: <code>lead_form</code> (форма заявки) или другой режим</td></tr>
       <tr><td><code>admin_tg_username</code></td><td>Telegram-username админа (например <code>@misha</code>). Используется для прямой ссылки</td></tr>
       <tr><td><code>phone</code></td><td>Телефон для контактов</td></tr>
-      <tr><td><code>email</code></td><td>Email для контактов</td></tr>
+      <tr><td><code>email</code></td><td>Email для контактов и получения заявок</td></tr>
       <tr><td><code>tg_username</code></td><td>Telegram-username для отображения на сайте</td></tr>
       <tr><td><code>tg_link</code></td><td>Полная ссылка на Telegram-канал/личку (например <code>https://t.me/your_username</code>)</td></tr>
       <tr><td><code>hero_image_path</code></td><td>Имя файла большой картинки в шапке сайта</td></tr>
       <tr><td><code>Изображение шапки</code></td><td>Загрузить новую картинку для hero-секции (PNG/JPG/WEBP)</td></tr>
+      <tr><td><code>SMTP Host</code></td><td>Адрес SMTP-сервера. Для Gmail: <code>smtp.gmail.com</code>, для Яндекс: <code>smtp.yandex.ru</code>, для Mail.ru: <code>smtp.mail.ru</code></td></tr>
+      <tr><td><code>SMTP Port</code></td><td>Порт SMTP-сервера. Обычно <code>587</code></td></tr>
+      <tr><td><code>SMTP Login</code></td><td>Полный email-адрес для входа (например <code>my@gmail.com</code>)</td></tr>
+      <tr><td><code>SMTP Password</code></td><td>Пароль приложения для SMTP (не основной пароль от почты!)</td></tr>
+      <tr><td><code>SMTP Use TLS</code></td><td>Включите TLS-шифрование (оставьте включённым по умолчанию)</td></tr>
     </table>
 
     <p><strong>Настройка Telegram-уведомлений:</strong></p>
@@ -198,6 +203,93 @@
 
     <div class="tip-box danger">
       🚫 <strong>Не меняйте поля</strong> <code>telegram_bot_token</code> и <code>telegram_chat_id</code> без необходимости — неправильное значение сломает уведомления.
+    </div>
+
+    <h3>📧 Настройка пересылки заявок на email</h3>
+
+    <p>Чтобы заявки с сайта приходили на ваш email, настройте SMTP-подключение. Это безопаснее, чем указывать обычный пароль — используется <strong>пароль приложения</strong>.</p>
+
+    <p><strong>Шаг 1. Выберите почтовый сервис:</strong></p>
+    <table class="field-table">
+      <tr><th>Сервис</th><th>SMTP Host</th><th>SMTP Port</th></tr>
+      <tr><td><strong>Gmail</strong></td><td><code>smtp.gmail.com</code></td><td><code>587</code></td></tr>
+      <tr><td><strong>Яндекс.Почта</strong></td><td><code>smtp.yandex.ru</code></td><td><code>587</code></td></tr>
+      <tr><td><strong>Mail.ru</strong></td><td><code>smtp.mail.ru</code></td><td><code>587</code></td></tr>
+    </table>
+
+    <p><strong>Шаг 2. Создайте пароль приложения:</strong></p>
+
+    <div class="doc-section">
+      <h4>Для Gmail</h4>
+      <ol>
+        <li>Откройте <a href="https://myaccount.google.com" target="_blank">Google Аккаунт</a></li>
+        <li>Перейдите в раздел <strong>Безопасность</strong></li>
+        <li>Включите <strong>двухфакторную аутентификацию</strong> (если не включена)</li>
+        <li>Снова откройте <strong>Безопасность</strong></li>
+        <li>Найдите раздел <strong>Пароль приложения</strong> (в разделе «Вход в Google»)</li>
+        <li>В поле «Выберите приложение» выберите <strong>Другое (название)</strong></li>
+        <li>Введите название, например: <code>Сайт</code></li>
+        <li>Нажмите <strong>Создать</strong></li>
+        <li>Скопируйте появившийся 16-символьный код (например <code>abcd efgh ijkl mnop</code>)</li>
+      </ol>
+      <div class="tip-box danger">
+        🚫 <strong>Не вводите обычный пароль от Gmail!</strong> Нужен именно пароль приложения. Без него SMTP не заработает.
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h4>Для Яндекс.Почта</h4>
+      <ol>
+        <li>Откройте <a href="https://id.yandex.ru" target="_blank">Аккаунт Яндекса</a></li>
+        <li>Перейдите в <strong>Безопасность</strong></li>
+        <li>Включите <strong>двухфакторную аутентификацию</strong></li>
+        <li>Откройте раздел <strong>Пароли приложений</strong></li>
+        <li>Создайте новый пароль для «Другого приложения» — назовите <code>Сайт</code></li>
+        <li>Скопируйте появившийся пароль</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h4>Для Mail.ru</h4>
+      <ol>
+        <li>Откройте <a href="https://mail.ru" target="_blank">Mail.ru</a></li>
+        <li>Нажмите на аватар → <strong>Пароль и подключение</strong></li>
+        <li>Перейдите в <strong>Пароли приложений</strong></li>
+        <li>Создайте новый пароль — назовите <code>Сайт</code></li>
+        <li>Скопируйте появившийся пароль</li>
+      </ol>
+    </div>
+
+    <p><strong>Шаг 3. Введите данные в админке:</strong></p>
+    <table class="field-table">
+      <tr><th>Поле</th><th>Что вписать</th><th>Пример</th></tr>
+      <tr><td><code>Email</code></td><td>Куда слать заявки</td><td><code>my@gmail.com</code></td></tr>
+      <tr><td><code>SMTP Host</code></td><td>Адрес SMTP из таблицы выше</td><td><code>smtp.gmail.com</code></td></tr>
+      <tr><td><code>SMTP Port</code></td><td>Порт (обычно 587)</td><td><code>587</code></td></tr>
+      <tr><td><code>SMTP Login</code></td><td>Ваш email полностью</td><td><code>my@gmail.com</code></td></tr>
+      <tr><td><code>SMTP Password</code></td><td>Пароль приложения (16 символов)</td><td><code>abcdefg hijklmnop</code></td></tr>
+      <tr><td><code>SMTP Use TLS</code></td><td>Оставьте включённым</td><td>☑️</td></tr>
+    </table>
+
+    <p><strong>Шаг 4. Проверьте:</strong></p>
+    <ol>
+      <li>Нажмите <strong>Сохранить</strong></li>
+      <li>Оставьте тестовую заявку на сайте (через форму заказа)</li>
+      <li>Проверьте почту — должно прийти письмо с темой «🚨 Новая заявка: ...»</li>
+    </ol>
+
+    <div class="tip-box warning">
+      ⚠️ <strong>Если email не приходит:</strong>
+      <ul>
+        <li>Проверьте, что <code>Email</code> не равен <code>info@example.com</code> — это значение по умолчанию</li>
+        <li>Убедитесь, что введён именно <strong>пароль приложения</strong>, а не обычный пароль от почты</li>
+        <li>Проверьте логи Flask — там будет ошибка SMTP, если что-то не так</li>
+        <li>Для Gmail: убедитесь, что в настройках аккаунта разрешены «менее безопасные приложения» (лучше включить 2FA)</li>
+      </ul>
+    </div>
+
+    <div class="tip-box">
+      💡 <strong>Заявки сохраняются всегда</strong> — даже если SMTP не настроен, заявки будут записываться в базу данных и отображаться в разделе «Заявки (Лиды)». Просто email не уйдёт.
     </div>
   </div>
 
@@ -220,6 +312,7 @@
       <tr><td>Картинка не загружается</td><td>Убедитесь, что файл имеет формат PNG, JPG, JPEG или WEBP. Максимальный размер — 25 МБ</td></tr>
       <tr><td>Файл товара не скачивается</td><td>Проверьте, что файл загружен корректно (PDF, ZIP, DOC, DOCX). Откройте <code>/uploads/имя_файла</code> напрямую</td></tr>
       <tr><td>Уведомления в Telegram не приходят</td><td>Проверьте токен бота и chat_id. Убедитесь, что вы написали боту перед настройкой</td></tr>
+      <tr><td>Заявки не приходят на email</td><td>Проверьте, что введён пароль приложения (не основной пароль). Убедитесь, что поле <code>Email</code> не равно <code>info@example.com</code>. Проверьте логи Flask</td></tr>
       <tr><td>Категория не отображается в API</td><td>Убедитесь, что <code>product_type</code> совпадает с ожидаемым значением (см. таблицу в разделе «Категории»)</td></tr>
     </table>
   </div>
