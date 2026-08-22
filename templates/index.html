@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/menu.css">
   <link rel="stylesheet" href="/static/css/motion.css">
+  <link rel="stylesheet" href="/static/css/gallery.css">
 </head>
 <body>
 <header class="site-header">
@@ -69,6 +70,21 @@
 </main>
 
 <footer><div class="container">© <span id="year"></span></div></footer>
+
+<div class="modal" id="productDetailModal" aria-hidden="true">
+  <div class="modal-backdrop" data-product-close></div>
+  <div class="product-detail-card">
+    <button class="modal-close" data-product-close>×</button>
+    <div id="detailGallery" class="detail-gallery"></div>
+    <div class="product-detail-body">
+      <div class="product-meta" id="detailCategory"></div>
+      <h2 id="detailTitle"></h2>
+      <p id="detailDescription"></p>
+      <div class="price" id="detailPrice"></div>
+      <button class="btn btn-primary" id="detailOrder">Заказать</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="orderModal" aria-hidden="true">
   <div class="modal-backdrop" data-close></div>

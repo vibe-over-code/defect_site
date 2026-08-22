@@ -3,10 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.base import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
-from wtforms import FileField, SelectField
+from wtforms import FileField, SelectField, MultipleFileField
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect
+from markupsafe import Markup, escape
+from urllib.parse import quote
 import os
+import json
 import requests
 
 app = Flask(__name__)
@@ -54,6 +57,7 @@ class Product(db.Model):
     show_contacts = db.Column(db.Boolean, default=False)
     file_path = db.Column(db.String(200), nullable=True)
     image_path = db.Column(db.String(255), nullable=True)
+    gallery_paths = db.Column(db.Text, nullable=True)
     def __str__(self):
         return self.title
 
@@ -113,6 +117,9 @@ def ensure_schema():
         if 'image_path' not in columns:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE product ADD COLUMN image_path VARCHAR(255)'))
+        if 'gallery_paths' not in columns:
+            with db.engine.begin() as conn:
+                conn.execute(text('ALTER TABLE product ADD COLUMN gallery_paths TEXT'))
     if 'site_settings' in tables:
         columns = {c['name'] for c in inspector.get_columns('site_settings')}
         if 'hero_image_path' not in columns:
@@ -160,10 +167,17 @@ class CategoryView(ModelView):
 
 
 class ProductView(ModelView):
-    column_list = ('id', 'title', 'price', 'show_contacts')
+    column_list = ('id', 'title', 'price', 'show_contacts', 'image_path')
     form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'file')
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
+    column_formatters = {
+        'image_path': lambda view, context, model, name: Markup(
+            f'<div style="border:3px solid #2d9c9a;border-radius:10px;padding:3px;width:74px;text-align:center">'
+            f'<img src="/uploads/{escape(quote(model.image_path))}" style="width:64px;height:48px;object-fit:cover;border-radius:6px;display:block">'
+            f'<small style="color:#23817f;font-weight:700">ПРЕВЬЮ</small></div>'
+        ) if model.image_path else Markup('<span style="color:#999">Нет обложки</span>')
+    }
     form_args = {
         'title': {'label': 'Название материала'},
         'description': {'label': 'Короткое описание'},
@@ -183,17 +197,32 @@ class ProductView(ModelView):
             ('school_diagnostics', 'Диагностика готовности к школе'),
             ('school_geometry', 'Геометрический материал'),
         ]),
-        'image': FileField('Изображение карточки (PNG/JPG/WEBP)'),
+        'category_id': SelectField('Категория', coerce=int),
+        'image': FileField('🟩 ПРЕВЬЮ: главная картинка карточки (PNG/JPG/WEBP)'),
+        'gallery': MultipleFileField('Остальные картинки (можно выбрать несколько)', render_kw={'multiple': True}),
         'file': FileField('Файл товара (PDF, ZIP, DOC)')
     }
 
+    @staticmethod
+    def _category_choices():
+        audience_names = {
+            'defectologists': 'Дефектологам',
+            'speech_therapists': 'Логопедам',
+            'school': 'Подготовка к школе',
+        }
+        categories = Category.query.order_by(Category.audience, Category.name).all()
+        return [(category.id, f"{audience_names.get(category.audience, 'Раздел')}: {category.name}")
+                for category in categories]
+
     def create_form(self):
         form = super().create_form()
+        form.category_id.choices = self._category_choices()
         form.__class__ = type('ProductForm', (form.__class__,), {'enctype': 'multipart/form-data'})
         return form
 
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
+        form.category_id.choices = self._category_choices()
         form.__class__ = type('ProductForm', (form.__class__,), {'enctype': 'multipart/form-data'})
         return form
 
@@ -205,6 +234,16 @@ class ProductView(ModelView):
             if not filename:
                 raise ValueError('Изображение должно быть PNG, JPG, JPEG или WEBP.')
             product.image_path = filename
+
+        gallery_field = getattr(form, 'gallery', None)
+        if gallery_field and gallery_field.data:
+            gallery = []
+            for image_file in gallery_field.data:
+                filename = save_upload(image_file, image=True)
+                if filename:
+                    gallery.append(filename)
+            old_gallery = json.loads(product.gallery_paths or '[]')
+            product.gallery_paths = json.dumps(old_gallery + gallery, ensure_ascii=False)
 
         file_field = getattr(form, 'file', None)
         if file_field and file_field.data and file_field.data.filename:
@@ -280,7 +319,8 @@ def get_products():
             'audience': cat.audience if cat else 'defectologists',
             'category_name': cat.name if cat else 'Без категории',
             'show_contacts': p.show_contacts, 'file_path': p.file_path,
-            'image_path': p.image_path
+            'image_path': p.image_path,
+            'gallery_paths': json.loads(p.gallery_paths or '[]')
         })
     return jsonify(result)
 

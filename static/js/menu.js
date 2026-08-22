@@ -36,6 +36,28 @@ function renderProducts() {
   if (!list.length) { element.innerHTML = '<div class="loading">В этой категории пока нет материалов.</div>'; return; }
   element.innerHTML = list.map(product => `<article class="product-card"><div class="product-image">${product.image_path ? `<img src="/uploads/${encodeURIComponent(product.image_path)}" alt="">` : '<div class="placeholder">✦</div>'}</div><div class="product-body"><div class="product-meta">${esc(product.category_name || 'Материал')}</div><h3>${esc(product.title)}</h3><p>${esc(product.description || 'Готовый материал для работы.')}</p>${product.price ? `<div class="price">${esc(product.price)} ₽</div>` : ''}<button class="btn btn-primary" onclick="openOrder(${product.id})">Подробнее / заказать</button></div></article>`).join('');
 }
+function renderProducts() {
+  const element = $('#products');
+  if (!activeAudience) { element.innerHTML = ''; return; }
+  const list = products.filter(product => product.audience === activeAudience && (activeCategory === null || product.category_id === activeCategory));
+  if (!list.length) { element.innerHTML = '<div class="loading">В этой категории пока нет материалов.</div>'; return; }
+  element.innerHTML = list.map(product => `<article class="product-card product-preview" onclick="openProduct(${product.id})" tabindex="0" role="button"><div class="product-image">${product.image_path ? `<img src="/uploads/${encodeURIComponent(product.image_path)}" alt="">` : '<div class="placeholder">✦</div>'}</div><div class="product-body"><div class="product-meta">${esc(product.category_name || 'Материал')}</div><h3>${esc(product.title)}</h3></div></article>`).join('');
+}
+function openProduct(id) {
+  const product = products.find(item => item.id === id);
+  if (!product) return;
+  const images = [...new Set([product.image_path, ...(product.gallery_paths || [])].filter(Boolean))];
+  $('#detailGallery').innerHTML = images.length ? images.map(image => `<img src="/uploads/${encodeURIComponent(image)}" alt="">`).join('') : '<div class="detail-placeholder">Нет изображения</div>';
+  $('#detailCategory').textContent = product.category_name || '';
+  $('#detailTitle').textContent = product.title;
+  $('#detailDescription').textContent = product.description || '';
+  $('#detailPrice').textContent = product.price ? `${product.price} ₽` : '';
+  $('#detailOrder').onclick = () => { closeProduct(); openOrder(product.id); };
+  $('#productDetailModal').classList.add('open');
+  $('#productDetailModal').setAttribute('aria-hidden', 'false');
+}
+function closeProduct() { $('#productDetailModal').classList.remove('open'); $('#productDetailModal').setAttribute('aria-hidden', 'true'); }
+document.querySelectorAll('[data-product-close]').forEach(item => item.addEventListener('click', closeProduct));
 window.openOrder = id => { const product = products.find(item => item.id === id); if (!product) return; $('#modalProduct').textContent = product.title; $('#productInput').value = product.title; $('#formMessage').textContent = ''; $('#formMessage').className = 'form-message'; $('#orderModal').classList.add('open'); $('#orderModal').setAttribute('aria-hidden', 'false'); };
 function closeModal() { $('#orderModal').classList.remove('open'); $('#orderModal').setAttribute('aria-hidden', 'true'); }
 document.querySelectorAll('[data-close]').forEach(item => item.addEventListener('click', closeModal));
