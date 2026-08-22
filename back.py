@@ -14,6 +14,8 @@ import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
+from datetime import datetime
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -395,7 +397,7 @@ def send_order_email(name, contact, product):
 👤 Имя: {name}
 📞 Контакт: {contact}
 📦 Товар: {product}
-📅 Дата: {db.func.current_timestamp()}
+📅 Дата: {datetime.now()}
 """
 
     msg = MIMEMultipart()
