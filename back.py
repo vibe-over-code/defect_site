@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.base import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
-from wtforms import FileField, SelectField, MultipleFileField
+from wtforms import FileField, SelectField, MultipleFileField, StringField
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect
 from markupsafe import Markup, escape
@@ -83,7 +83,10 @@ class SiteSettings(db.Model):
     email = db.Column(db.String(100), default='info@example.com')
     tg_username = db.Column(db.String(100), default='@ваша_телега')
     tg_link = db.Column(db.String(200), default='https://t.me/your_username')
+    max_username = db.Column(db.String(100), default='')
+    max_link = db.Column(db.String(200), default='')
     hero_image_path = db.Column(db.String(255), default='hero.png')
+    card_image_fit = db.Column(db.String(20), default='cover')
     smtp_host = db.Column(db.String(200), default='smtp.gmail.com')
     smtp_port = db.Column(db.Integer, default=587)
     smtp_login = db.Column(db.String(200), default='')
@@ -135,6 +138,13 @@ def ensure_schema():
         if 'hero_image_path' not in columns:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE site_settings ADD COLUMN hero_image_path VARCHAR(255)'))
+        if 'card_image_fit' not in columns:
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE site_settings ADD COLUMN card_image_fit VARCHAR(20) DEFAULT 'cover'"))
+        for col in ['max_username', 'max_link']:
+            if col not in columns:
+                with db.engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE site_settings ADD COLUMN {col} VARCHAR(200) DEFAULT ''"))
         smtp_cols = ['smtp_host', 'smtp_port', 'smtp_login', 'smtp_password', 'smtp_use_tls']
         for col in smtp_cols:
             if col not in columns:
@@ -280,12 +290,22 @@ class LeadView(ModelView):
 
 
 class SiteSettingsView(ModelView):
-    form_columns = ('sale_mode', 'admin_tg_username', 'telegram_bot_token', 'telegram_chat_id', 'phone', 'email', 'tg_username', 'tg_link', 'hero_image',
-                    'smtp_host', 'smtp_port', 'smtp_login', 'smtp_password', 'smtp_use_tls')
-    column_list = ('id', 'phone', 'email', 'tg_username', 'hero_image_path')
+    form_columns = ('sale_mode', 'admin_tg_username', 'telegram_bot_token', 'telegram_chat_id', 'phone', 'email', 'max_username', 'max_link', 'hero_image',
+                    'card_image_fit', 'smtp_host', 'smtp_port', 'smtp_login', 'smtp_password', 'smtp_use_tls')
+    column_list = ('id', 'phone', 'email', 'max_username', 'hero_image_path')
     form_extra_fields = {'hero_image': FileField('Картинка большой шапки (PNG/JPG/WEBP)')}
     can_create = False
     can_delete = False
+
+    form_extra_fields['card_image_fit'] = SelectField(
+        'Режим изображений в карточках',
+        choices=[
+            ('cover', 'Обрезать по контейнеру'),
+            ('contain', 'Вписывать целиком'),
+        ],
+    )
+    form_extra_fields['max_username'] = StringField('Имя в MAX')
+    form_extra_fields['max_link'] = StringField('Ссылка на MAX')
 
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
@@ -366,9 +386,10 @@ def get_settings():
         'direct_link': f"https://t.me/{settings.admin_tg_username.replace('@', '')}",
         'phone': settings.phone,
         'email': settings.email,
-        'tg_username': settings.tg_username,
-        'tg_link': settings.tg_link,
-        'hero_image_path': settings.hero_image_path
+        'max_username': settings.max_username or 'MAX',
+        'max_link': settings.max_link or 'https://max.ru',
+        'hero_image_path': settings.hero_image_path,
+        'card_image_fit': settings.card_image_fit or 'cover'
     })
 
 
