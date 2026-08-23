@@ -46,6 +46,12 @@
         var fileInput = panel.querySelector('input[type="file"]');
         var pendingFiles = [];
 
+        function syncCreateFiles() {
+            var transfer = new DataTransfer();
+            pendingFiles.forEach(function(file) { transfer.items.add(file); });
+            galleryInput.files = transfer.files;
+        }
+
     if (productId) loadGallery();
 
         function loadGallery() {
@@ -69,9 +75,8 @@
             if (!productId) {
                 var index = Number(btn.dataset.index);
                 pendingFiles.splice(index, 1);
-                var transfer = new DataTransfer();
-                pendingFiles.forEach(function(file) { transfer.items.add(file); });
-                fileInput.files = transfer.files;
+                syncCreateFiles();
+                fileInput.value = '';
                 renderPendingFiles();
                 return;
             }
@@ -88,7 +93,9 @@
         fileInput.addEventListener('change', function() {
         if (!this.files.length) return;
         if (!productId) {
-            pendingFiles = Array.from(this.files);
+            pendingFiles = pendingFiles.concat(Array.from(this.files));
+            syncCreateFiles();
+            fileInput.value = '';
             renderPendingFiles();
             status.textContent = 'Фото будут сохранены вместе с товаром';
             return;

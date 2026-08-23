@@ -268,16 +268,8 @@ class ProductView(ModelView):
                 raise ValueError('Изображение должно быть PNG, JPG, JPEG или WEBP.')
             product.image_path = filename
 
-        # Добавляем одну картинку в галерею (через форму)
-        gallery_field = getattr(form, 'gallery', None)
-        if gallery_field and gallery_field.data:
-            old_gallery = json.loads(product.gallery_paths or '[]')
-            gallery = gallery_field.data if isinstance(gallery_field.data, list) else [gallery_field.data]
-            for image_file in gallery:
-                filename = save_upload(image_file, image=True)
-                if filename:
-                    old_gallery.append(filename)
-            product.gallery_paths = json.dumps(old_gallery, ensure_ascii=False)
+        # Галерея управляется через отдельный API (/api/admin/product/<id>/gallery),
+        # поэтому поле формы gallery здесь не обрабатываем
 
         file_field = getattr(form, 'file', None)
         if file_field and file_field.data and file_field.data.filename:
@@ -501,8 +493,11 @@ def admin_add_gallery_image(product_id):
     filenames = [filename for filename in filenames if filename]
     if not filenames:
         return jsonify({'error': 'Выберите PNG, JPG, JPEG или WEBP'}), 400
-    gallery = json.loads(product.gallery_paths or '[]')
-    gallery.extend(filenames)
+    try:
+        gallery = json.loads(product.gallery_paths or '[]')
+    except (TypeError, ValueError):
+        gallery = []
+    gallery = list(dict.fromkeys(gallery + filenames))
     product.gallery_paths = json.dumps(gallery, ensure_ascii=False)
     db.session.commit()
     return jsonify({'status': 'ok', 'filenames': filenames})
