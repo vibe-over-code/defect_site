@@ -1,0 +1,205 @@
+{%- extends 'admin/model/edit.html' -%}
+
+{%- block tail -%}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Пытаемся извлечь ID товара из URL (например /admin/product/edit/?id=5)
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+    if (!productId) return;
+
+    // Находим зону поля gallery и заменяем её
+    const galleryInput = document.querySelector('input[name="gallery"]');
+    const galleryField = galleryInput?.closest('.form-group, .form-field, .form-row, li, fieldset');
+    if (!galleryField) return;
+
+    // Создаём новую панель галереи
+    const panel = document.createElement('div');
+    panel.className = 'admin-gallery-panel';
+    panel.innerHTML = `
+        <div class="admin-gallery-header">
+            <strong>🖼 Галерея товара</strong>
+            <span class="gallery-count"></span>
+        </div>
+        <div class="admin-gallery-list"></div>
+        <div class="admin-gallery-add">
+            <label class="btn btn-sm">
+                + Добавить фото
+                <input type="file" name="gallery" accept="image/png,image/jpeg,image/webp" style="display:none">
+            </label>
+            <span class="add-status"></span>
+        </div>
+    `;
+
+    galleryField.parentNode.insertBefore(panel, galleryField);
+    galleryField.style.display = 'none';
+
+    const list = panel.querySelector('.admin-gallery-list');
+    const count = panel.querySelector('.gallery-count');
+    const status = panel.querySelector('.add-status');
+    const fileInput = panel.querySelector('input[type="file"]');
+
+    // Загружаем существующие фото
+    loadGallery();
+
+    function loadGallery() {
+        fetch(`/api/admin/product/${productId}/gallery`)
+            .then(r => r.json())
+            .then(data => {
+                list.innerHTML = '';
+                count.textContent = data.images.length ? `(${data.images.length})` : '';
+                data.images.forEach(function(name) {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    item.innerHTML = `
+                        <img src="/uploads/${name}" alt="${name}">
+                        <button type="button" class="gallery-delete" data-name="${name}" title="Удалить">✕</button>
+                    `;
+                    list.appendChild(item);
+                });
+            });
+    }
+
+    // Удаление по клику на крестик
+    list.addEventListener('click', function(e) {
+        const btn = e.target.closest('.gallery-delete');
+        if (!btn) return;
+        if (!confirm('Удалить эту картинку?')) return;
+        const name = btn.dataset.name;
+        fetch(`/api/admin/product/${productId}/gallery/${encodeURIComponent(name)}`, {method: 'DELETE'})
+            .then(r => r.json())
+            .then(function(data) {
+                if (data.status === 'ok') loadGallery();
+                else alert('Ошибка удаления');
+            });
+    });
+
+    // Добавление одного фото
+    fileInput.addEventListener('change', function() {
+        if (!this.files.length) return;
+        status.textContent = 'Загрузка...';
+        const formData = new FormData();
+        formData.append('gallery', this.files[0]);
+
+        // Отправляем через форму редактирования (используем on_model_change)
+        const form = document.querySelector('form');
+        if (!form) { status.textContent = ''; return; }
+
+        // Временно добавляем файл в форму и submit
+        // Проще: используем fetch на тот же endpoint что и форма
+        status.textContent = 'Загрузка...';
+
+        // Просто submit формы — on_model_change сохранит
+        // Но это перезагрузит страницу. Лучше через AJAX:
+        const submitBtn = form.querySelector('input[type="submit"]');
+        if (!submitBtn) { status.textContent = ''; return; }
+
+        // Загружаем через AJAX и после успеха — обновляем галерею
+        fetch(`/api/admin/product/${productId}/gallery`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => {
+            if (r.redirected) {
+                window.location.href = r.url;
+            } else {
+                status.textContent = 'Готово ✓';
+                loadGallery();
+                fileInput.value = '';
+                setTimeout(() => status.textContent = '', 2000);
+            }
+        })
+        .catch(() => { status.textContent = 'Ошибка'; });
+    });
+});
+</script>
+
+<style>
+.admin-gallery-panel {
+    border: 2px solid #e9e1d7;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 12px 0;
+    background: #fff;
+}
+.admin-gallery-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.admin-gallery-header strong {
+    font-size: 16px;
+}
+.gallery-count {
+    color: #68777b;
+    font-size: 14px;
+}
+.admin-gallery-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.gallery-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #e9e1d7;
+    background: #f2eee8;
+}
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.gallery-delete {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(184,75,75,.85);
+    color: #fff;
+    font-size: 14px;
+    line-height: 24px;
+    cursor: pointer;
+    text-align: center;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gallery-delete:hover {
+    background: #b84b4b;
+}
+.admin-gallery-add {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.btn-sm {
+    background: #2d9c9a;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 0;
+    display: inline-block;
+}
+.btn-sm:hover {
+    background: #23817f;
+}
+.add-status {
+    color: #68777b;
+    font-size: 14px;
+}
+</style>
+{%- endblock -%}

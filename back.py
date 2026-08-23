@@ -199,6 +199,8 @@ class CategoryView(ModelView):
 class ProductView(ModelView):
     column_list = ('id', 'title', 'price', 'show_contacts', 'image_path')
     form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'gallery', 'file')
+    can_delete = True
+    edit_template = 'admin/product_edit.html'
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
     column_formatters = {
@@ -229,7 +231,7 @@ class ProductView(ModelView):
         ]),
         'category_id': SelectField('Категория', coerce=int),
         'image': FileField('🟩 ПРЕВЬЮ: главная картинка карточки (PNG/JPG/WEBP)'),
-        'gallery': MultipleFileField('Остальные картинки (можно выбрать несколько)', render_kw={'multiple': True}),
+        'gallery': FileField('🖼 Добавить ещё одну картинку в галерею'),
         'file': FileField('Файл товара (PDF, ZIP, DOC)')
     }
 
@@ -265,15 +267,14 @@ class ProductView(ModelView):
                 raise ValueError('Изображение должно быть PNG, JPG, JPEG или WEBP.')
             product.image_path = filename
 
+        # Добавляем одну картинку в галерею (через форму)
         gallery_field = getattr(form, 'gallery', None)
-        if gallery_field and gallery_field.data:
-            gallery = []
-            for image_file in gallery_field.data:
-                filename = save_upload(image_file, image=True)
-                if filename:
-                    gallery.append(filename)
-            old_gallery = json.loads(product.gallery_paths or '[]')
-            product.gallery_paths = json.dumps(old_gallery + gallery, ensure_ascii=False)
+        if gallery_field and gallery_field.data and gallery_field.data.filename:
+            filename = save_upload(gallery_field.data, image=True)
+            if filename:
+                old_gallery = json.loads(product.gallery_paths or '[]')
+                old_gallery.append(filename)
+                product.gallery_paths = json.dumps(old_gallery, ensure_ascii=False)
 
         file_field = getattr(form, 'file', None)
         if file_field and file_field.data and file_field.data.filename:
@@ -472,6 +473,54 @@ def new_order():
             app.logger.exception('Telegram notification failed')
 
     return jsonify({'status': 'success', 'message': 'Заявка принята'})
+
+
+# === API для управления галереей товаров в админке ===
+
+@app.route('/api/admin/product/<int:product_id>/gallery', methods=['GET'])
+def admin_get_gallery(product_id):
+    """Возвращает список картинок галереи товара."""
+    product = db.session.get(Product, product_id)
+    if not product:
+        return jsonify({'error': 'Товар не найден'}), 404
+    gallery = json.loads(product.gallery_paths or '[]')
+    return jsonify({'images': gallery})
+
+
+@app.route('/api/admin/product/<int:product_id>/gallery', methods=['POST'])
+def admin_add_gallery_image(product_id):
+    """Добавляет одну новую картинку в галерею товара, не заменяя остальные."""
+    product = db.session.get(Product, product_id)
+    if not product:
+        return jsonify({'error': 'Товар не найден'}), 404
+    image = request.files.get('gallery')
+    filename = save_upload(image, image=True)
+    if not filename:
+        return jsonify({'error': 'Выберите PNG, JPG, JPEG или WEBP'}), 400
+    gallery = json.loads(product.gallery_paths or '[]')
+    gallery.append(filename)
+    product.gallery_paths = json.dumps(gallery, ensure_ascii=False)
+    db.session.commit()
+    return jsonify({'status': 'ok', 'filename': filename})
+
+
+@app.route('/api/admin/product/<int:product_id>/gallery/<path:filename>', methods=['DELETE'])
+def admin_delete_gallery_image(product_id, filename):
+    """Удаляет одну картинку из галереи товара и файл с диска."""
+    product = db.session.get(Product, product_id)
+    if not product:
+        return jsonify({'error': 'Товар не найден'}), 404
+    gallery = json.loads(product.gallery_paths or '[]')
+    if filename not in gallery:
+        return jsonify({'error': 'Картинка не найдена в галерее'}), 404
+    gallery.remove(filename)
+    product.gallery_paths = json.dumps(gallery, ensure_ascii=False)
+    db.session.commit()
+    # Удаляем файл с диска
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/uploads/<path:filename>')
