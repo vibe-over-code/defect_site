@@ -200,6 +200,7 @@ class ProductView(ModelView):
     column_list = ('id', 'title', 'price', 'show_contacts', 'image_path')
     form_columns = ('title', 'description', 'price', 'type', 'category_id', 'show_contacts', 'image', 'gallery', 'file')
     can_delete = True
+    create_template = 'admin/product_edit.html'
     edit_template = 'admin/product_edit.html'
     column_searchable_list = ('title',)
     column_filters = ('type', 'show_contacts')
@@ -231,7 +232,7 @@ class ProductView(ModelView):
         ]),
         'category_id': SelectField('Категория', coerce=int),
         'image': FileField('🟩 ПРЕВЬЮ: главная картинка карточки (PNG/JPG/WEBP)'),
-        'gallery': FileField('🖼 Добавить ещё одну картинку в галерею'),
+        'gallery': MultipleFileField('🖼 Добавить картинки в галерею'),
         'file': FileField('Файл товара (PDF, ZIP, DOC)')
     }
 
@@ -269,12 +270,14 @@ class ProductView(ModelView):
 
         # Добавляем одну картинку в галерею (через форму)
         gallery_field = getattr(form, 'gallery', None)
-        if gallery_field and gallery_field.data and gallery_field.data.filename:
-            filename = save_upload(gallery_field.data, image=True)
-            if filename:
-                old_gallery = json.loads(product.gallery_paths or '[]')
-                old_gallery.append(filename)
-                product.gallery_paths = json.dumps(old_gallery, ensure_ascii=False)
+        if gallery_field and gallery_field.data:
+            old_gallery = json.loads(product.gallery_paths or '[]')
+            gallery = gallery_field.data if isinstance(gallery_field.data, list) else [gallery_field.data]
+            for image_file in gallery:
+                filename = save_upload(image_file, image=True)
+                if filename:
+                    old_gallery.append(filename)
+            product.gallery_paths = json.dumps(old_gallery, ensure_ascii=False)
 
         file_field = getattr(form, 'file', None)
         if file_field and file_field.data and file_field.data.filename:
@@ -493,15 +496,16 @@ def admin_add_gallery_image(product_id):
     product = db.session.get(Product, product_id)
     if not product:
         return jsonify({'error': 'Товар не найден'}), 404
-    image = request.files.get('gallery')
-    filename = save_upload(image, image=True)
-    if not filename:
+    images = request.files.getlist('gallery')
+    filenames = [save_upload(image, image=True) for image in images]
+    filenames = [filename for filename in filenames if filename]
+    if not filenames:
         return jsonify({'error': 'Выберите PNG, JPG, JPEG или WEBP'}), 400
     gallery = json.loads(product.gallery_paths or '[]')
-    gallery.append(filename)
+    gallery.extend(filenames)
     product.gallery_paths = json.dumps(gallery, ensure_ascii=False)
     db.session.commit()
-    return jsonify({'status': 'ok', 'filename': filename})
+    return jsonify({'status': 'ok', 'filenames': filenames})
 
 
 @app.route('/api/admin/product/<int:product_id>/gallery/<path:filename>', methods=['DELETE'])
