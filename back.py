@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.base import BaseView, expose
@@ -328,7 +328,39 @@ admin.add_view(SiteSettingsView(SiteSettings, db, name='⚙️ Сайт и ко�
 @app.route('/')
 def index():
     """Отдаёт главную страницу сайта."""
-    return render_template('index.html')
+    products = Product.query.order_by(Product.id.desc()).all()
+    return render_template('index.html', products=products, site_url=public_site_url())
+
+
+def public_site_url():
+    """Возвращает базовый URL сайта для canonical, sitemap и Open Graph."""
+    configured_url = os.environ.get('PUBLIC_SITE_URL', '').strip().rstrip('/')
+    return configured_url or request.url_root.rstrip('/')
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Инструкции для поисковых роботов Google и Яндекса."""
+    content = (
+        'User-agent: *\n'
+        'Allow: /\n'
+        'Disallow: /admin/\n'
+        'Disallow: /api/\n'
+        'Disallow: /instance/\n'
+        f'Sitemap: {public_site_url()}/sitemap.xml\n'
+    )
+    return Response(content, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Карта публичных страниц сайта."""
+    base_url = public_site_url()
+    urls = [f'{base_url}/']
+    urls.extend(f'{base_url}/product/{product.id}' for product in Product.query.order_by(Product.id).all())
+    body = ''.join(f'<url><loc>{escape(url)}</loc></url>' for url in urls)
+    xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>'
+    return Response(xml, mimetype='application/xml')
 
 
 @app.route('/product/<int:product_id>')
@@ -337,7 +369,8 @@ def product_page(product_id):
     category = db.session.get(Category, product.category_id) if product.category_id else None
     images = [product.image_path] if product.image_path else []
     images.extend(json.loads(product.gallery_paths or '[]'))
-    return render_template('product.html', product=product, category=category, images=list(dict.fromkeys(images)))
+    return render_template('product.html', product=product, category=category,
+                           images=list(dict.fromkeys(images)), site_url=public_site_url())
 
 
 @app.route('/api/categories', methods=['GET'])

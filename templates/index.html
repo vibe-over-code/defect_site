@@ -3,7 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Инструменты Дефектолога: Легко и доступно</title>
+  <meta name="description" content="Готовые материалы для дефектологов, логопедов и подготовки детей к школе: диагностика, рабочие листы, задания и документы для занятий.">
+  <meta name="keywords" content="материалы для дефектолога, материалы для логопеда, рабочие листы, диагностика, коррекционные занятия">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ site_url }}/">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Инструменты дефектолога — материалы для занятий">
+  <meta property="og:description" content="Готовые материалы для дефектологов, логопедов и подготовки детей к школе.">
+  <meta property="og:url" content="{{ site_url }}/">
+  <meta property="og:image" content="{{ site_url }}/uploads/hero.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {{ {'@context': 'https://schema.org', '@type': 'WebSite', 'name': 'Инструменты дефектолога', 'description': 'Готовые материалы для дефектологов, логопедов и подготовки детей к школе.', 'url': site_url}|tojson }}
+  </script>
+  <title>Материалы для дефектолога и логопеда | Инструменты дефектолога</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/menu.css">
   <link rel="stylesheet" href="/static/css/motion.css">
@@ -58,7 +72,18 @@
       </div>
       <div id="audienceMenus" class="audience-grid"></div>
       <div id="categoryFilters" class="category-grid"></div>
-      <div id="products" class="product-grid"></div>
+  <div id="products" class="product-grid"></div>
+      <noscript>
+        <div class="seo-products">
+          <h2>Материалы для занятий</h2>
+          {% for product in products %}
+            <article>
+              <h3><a href="/product/{{ product.id }}">{{ product.title }}</a></h3>
+              {% if product.description %}<p>{{ product.description }}</p>{% endif %}
+            </article>
+          {% else %}<p>Каталог материалов скоро обновится.</p>{% endfor %}
+        </div>
+      </noscript>
     </div>
   </section>
 

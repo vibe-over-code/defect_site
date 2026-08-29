@@ -3,7 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ product.title }}</title>
+  {% set product_description = (product.description or ('Материал «' ~ product.title ~ '» для дефектологов и логопедов.'))|striptags|truncate(160, True, '') %}
+  <meta name="description" content="{{ product_description }}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ site_url }}/product/{{ product.id }}">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:type" content="product">
+  <meta property="og:title" content="{{ product.title }} | Инструменты дефектолога">
+  <meta property="og:description" content="{{ product_description }}">
+  <meta property="og:url" content="{{ site_url }}/product/{{ product.id }}">
+  {% if images %}<meta property="og:image" content="{{ site_url }}/uploads/{{ images[0]|urlencode }}">{% endif %}
+  <script type="application/ld+json">
+  {{ {'@context': 'https://schema.org', '@type': 'Product', 'name': product.title, 'description': product_description, 'url': site_url ~ '/product/' ~ product.id}|tojson }}
+  </script>
+  <title>{{ product.title }} | Инструменты дефектолога</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/product.css">
   <style>
@@ -26,7 +39,7 @@
   <main class="product-detail-page">
     <section class="product-viewer">
       <div class="product-main-image">
-        {% if images %}<img id="mainProductImage" src="/uploads/{{ images[0]|urlencode }}" alt="{{ product.title }}">{% else %}<div class="detail-placeholder">Нет изображения</div>{% endif %}
+        {% if images %}<img id="mainProductImage" src="/uploads/{{ images[0]|urlencode }}" alt="{{ product.title }} — материал для занятий">{% else %}<div class="detail-placeholder">Нет изображения</div>{% endif %}
         {% if images|length > 1 %}<button class="gallery-arrow gallery-prev" type="button" aria-label="Предыдущее фото">‹</button><button class="gallery-arrow gallery-next" type="button" aria-label="Следующее фото">›</button>{% endif %}
       </div>
       {% if images|length > 1 %}<div class="product-thumbnails">{% for image in images %}<button type="button" class="thumbnail {% if loop.first %}active{% endif %}" data-image="/uploads/{{ image|urlencode }}"><img src="/uploads/{{ image|urlencode }}" alt=""></button>{% endfor %}</div>{% endif %}
