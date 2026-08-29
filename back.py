@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template, Response
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.base import BaseView, expose
@@ -10,6 +10,7 @@ from markupsafe import Markup, escape
 from urllib.parse import quote
 import os
 import json
+import hmac
 import requests
 import smtplib
 from email.mime.text import MIMEText
@@ -38,6 +39,47 @@ app.config.update(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-only-change-me'),
     MAX_CONTENT_LENGTH=25 * 1024 * 1024,
 )
+
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'dev-admin-password')
+
+
+@app.before_request
+def protect_admin():
+    """Требует вход для Flask-Admin и связанных с ним API-маршрутов."""
+    if request.path == '/admin/login' or not (
+        request.path == '/admin' or request.path.startswith('/admin/') or
+        request.path == '/api/admin' or request.path.startswith('/api/admin/')
+    ):
+        return None
+    if session.get('admin_authenticated'):
+        return None
+    if request.path.startswith('/api/admin/'):
+        return jsonify({'error': 'Требуется авторизация'}), 401
+    return redirect(url_for('admin_login', next=request.full_path))
+
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Страница входа в админку."""
+    if session.get('admin_authenticated'):
+        return redirect(request.args.get('next') or url_for('admin.index'))
+    error = None
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        if hmac.compare_digest(password, ADMIN_PASSWORD):
+            session['admin_authenticated'] = True
+            next_url = request.form.get('next', '')
+            if not next_url.startswith('/') or next_url.startswith('//'):
+                next_url = url_for('admin.index')
+            return redirect(next_url)
+        error = 'Неверный пароль'
+    return render_template('admin/login.html', error=error, next=request.args.get('next', ''))
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_authenticated', None)
+    return redirect(url_for('admin_login'))
 
 db = SQLAlchemy(app)
 

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход в админку</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f4f6f8; font: 16px system-ui, sans-serif; color: #263238; }
+    form { width: min(360px, calc(100% - 40px)); padding: 28px; box-sizing: border-box; background: white; border-radius: 12px; box-shadow: 0 8px 30px #0001; }
+    h1 { margin: 0 0 20px; font-size: 24px; }
+    label { display: block; margin-bottom: 8px; }
+    input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5db; border-radius: 6px; font-size: 16px; }
+    button { width: 100%; margin-top: 16px; padding: 11px; border: 0; border-radius: 6px; background: #337ab7; color: white; font-size: 16px; cursor: pointer; }
+    .error { margin: 0 0 14px; color: #b42318; }
+  </style>
+</head>
+<body>
+  <form method="post">
+    <h1>Вход в админку</h1>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <label for="password">Пароль</label>
+    <input id="password" name="password" type="password" required autofocus>
+    <input name="next" type="hidden" value="{{ next }}">
+    <button type="submit">Войти</button>
+  </form>
+</body>
+</html>
