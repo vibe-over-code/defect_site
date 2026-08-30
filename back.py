@@ -310,8 +310,24 @@ class ProductView(ModelView):
                 raise ValueError('Изображение должно быть PNG, JPG, JPEG или WEBP.')
             product.image_path = filename
 
-        # Галерея управляется через отдельный API (/api/admin/product/<id>/gallery),
-        # поэтому поле формы gallery здесь не обрабатываем
+        # При создании у товара ещё нет ID, поэтому браузер не может отправить
+        # галерею в API. Сохраняем выбранные файлы вместе с товаром; при
+        # редактировании это безопасно добавляет новые фото к имеющимся.
+        gallery_field = getattr(form, 'gallery', None)
+        gallery_files = getattr(gallery_field, 'data', None) if gallery_field else None
+        if gallery_files:
+            if not isinstance(gallery_files, (list, tuple)):
+                gallery_files = [gallery_files]
+            filenames = [save_upload(file_storage, image=True) for file_storage in gallery_files]
+            filenames = [filename for filename in filenames if filename]
+            if filenames:
+                try:
+                    gallery = json.loads(product.gallery_paths or '[]')
+                except (TypeError, ValueError):
+                    gallery = []
+                product.gallery_paths = json.dumps(
+                    list(dict.fromkeys(gallery + filenames)), ensure_ascii=False
+                )
 
         file_field = getattr(form, 'file', None)
         if file_field and file_field.data and file_field.data.filename:
