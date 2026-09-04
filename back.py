@@ -13,9 +13,14 @@ import json
 import hmac
 import requests
 import smtplib
+import html
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+try:
+    import markdown as markdown_lib
+except ImportError:
+    markdown_lib = None
 from datetime import datetime
 
 app = Flask(__name__)
@@ -136,6 +141,31 @@ class SiteSettings(db.Model):
     smtp_use_tls = db.Column(db.Boolean, default=True)
 
 
+class Post(db.Model):
+    """Пост в публичной ленте. Таблица независима от каталога и заявок."""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False, default='')
+    text = db.Column(db.Text, nullable=False)
+    image_path = db.Column(db.String(255), nullable=True)
+    retention_count = db.Column(db.Integer, nullable=False, default=5)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
+
+    def __str__(self):
+        return (self.title or self.text or '')[:60]
+
+
+def render_markdown(value):
+    """Рендерит безопасный Markdown поста без исполнения HTML от автора."""
+    source = html.escape(value or '')
+    if markdown_lib:
+        return Markup(markdown_lib.markdown(source, extensions=['extra', 'nl2br']))
+    # Базовый fallback позволяет приложению работать до установки зависимости.
+    return Markup('<p>' + source.replace('\n', '<br>') + '</p>')
+
+
+app.jinja_env.filters['markdown'] = render_markdown
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -167,6 +197,11 @@ def ensure_schema():
     """Добавляет новые колонки в уже существующую БД без удаления старых данных."""
     inspector = inspect(db.engine)
     tables = inspector.get_table_names()
+    if 'post' in tables:
+        columns = {c['name'] for c in inspector.get_columns('post')}
+        if 'title' not in columns:
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE post ADD COLUMN title VARCHAR(200) NOT NULL DEFAULT ''"))
     if 'product' in tables:
         columns = {c['name'] for c in inspector.get_columns('product')}
         if 'image_path' not in columns:
@@ -375,19 +410,61 @@ class SiteSettingsView(ModelView):
             settings.hero_image_path = filename
 
 
+class PostManagerView(BaseView):
+    @expose('/', methods=['GET', 'POST'])
+    def index(self):
+        error = None
+        if request.method == 'POST':
+            title = (request.form.get('title') or '').strip()
+            body = request.form.get('text') or ''
+            try:
+                count = max(0, min(30, int(request.form.get('retention_count', 5))))
+            except (TypeError, ValueError):
+                count = 5
+            image = request.files.get('image')
+            if not title:
+                error = 'Укажите заголовок поста.'
+            elif not body.strip():
+                error = 'Напишите текст поста.'
+            elif image and image.filename and not allowed_image(image.filename):
+                error = 'Фото должно быть PNG, JPG, JPEG или WEBP.'
+            else:
+                filename = save_upload(image, image=True) if image and image.filename else None
+                post = Post(title=title, text=body, image_path=filename, retention_count=count)
+                db.session.add(post)
+                db.session.flush()
+                old_posts = Post.query.filter(Post.id != post.id).order_by(Post.created_at.desc(), Post.id.desc()).all()
+                removed_files = []
+                for old_post in old_posts[max(0, count - 1):]:
+                    if old_post.image_path:
+                        removed_files.append(old_post.image_path)
+                    db.session.delete(old_post)
+                db.session.commit()
+                for old_filename in removed_files:
+                    old_file = os.path.join(UPLOAD_FOLDER, old_filename)
+                    if os.path.exists(old_file):
+                        os.remove(old_file)
+                return redirect(url_for('postmanager.index'))
+        posts = Post.query.order_by(Post.created_at.desc(), Post.id.desc()).all()
+        default_count = posts[0].retention_count if posts else 5
+        return self.render('admin/posts.html', posts=posts, error=error, default_count=default_count)
+
+
 admin = Admin(app, name='Админка: Материалы для занятий')
 admin.add_view(InstructionsView(name='📖 С чего начать', endpoint='instructions'))
 admin.add_view(CategoryView(Category, db, name='🗂 Категории'))
 admin.add_view(ProductView(Product, db, name='🛒 Материалы'))
 admin.add_view(LeadView(Lead, db, name='📥 Заявки'))
 admin.add_view(SiteSettingsView(SiteSettings, db, name='⚙️ Сайт и контакты'))
+admin.add_view(PostManagerView(name='📝 Посты', endpoint='postmanager'))
 
 
 @app.route('/')
 def index():
     """Отдаёт главную страницу сайта."""
     products = Product.query.order_by(Product.id.desc()).all()
-    return render_template('index.html', products=products, site_url=public_site_url())
+    posts = Post.query.order_by(Post.created_at.desc(), Post.id.desc()).all()
+    return render_template('index.html', products=products, posts=posts, site_url=public_site_url())
 
 
 def public_site_url():
@@ -460,6 +537,20 @@ def get_products():
             'gallery_paths': json.loads(p.gallery_paths or '[]')
         })
     return jsonify(result)
+
+
+@app.route('/api/posts', methods=['GET'])
+def get_posts():
+    """Возвращает актуальные посты для публичной ленты."""
+    posts = Post.query.order_by(Post.created_at.desc(), Post.id.desc()).all()
+    return jsonify([{
+        'id': post.id,
+        'title': post.title or 'Без заголовка',
+        'text': post.text,
+        'html': str(render_markdown(post.text)),
+        'image_path': post.image_path,
+        'created_at': post.created_at.isoformat() if post.created_at else None,
+    } for post in posts])
 
 
 @app.route('/api/settings', methods=['GET'])

@@ -1,5 +1,6 @@
 let categories = [];
 let products = [];
+let posts = [];
 let activeAudience = null;
 let activeCategory = null;
 
@@ -43,6 +44,18 @@ function renderProducts() {
   if (!list.length) { element.innerHTML = '<div class="loading">В этой категории пока нет материалов.</div>'; return; }
   element.innerHTML = list.map(product => `<a class="product-card product-preview" href="/product/${product.id}"><div class="product-image">${product.image_path ? `<img src="/uploads/${encodeURIComponent(product.image_path)}" alt="${esc(product.title)}">` : '<div class="placeholder">✦</div>'}</div><div class="product-body"><div class="product-meta">${esc(product.category_name || 'Материал')}</div><h3>${esc(product.title)}</h3></div></a>`).join('');
 }
+function renderPosts() {
+  const element = $('#postsList');
+  if (!element) return;
+  if (!posts.length) { element.innerHTML = '<div class="loading">Постов пока нет.</div>'; return; }
+  $('#latestPostTitle').textContent = posts[0].title || 'Новости и полезные материалы';
+  element.innerHTML = posts.map(post => `<article class="post-card">${post.image_path ? `<img src="/uploads/${encodeURIComponent(post.image_path)}" alt="">` : ''}<div class="post-body"><h3>${esc(post.title || '')}</h3>${post.html || `<p>${esc(post.text || '')}</p>`}<time>${post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU') : ''}</time></div></article>`).join('');
+}
+const postsWidget = $('#postsWidget'), postsPanel = $('#postsPanel');
+function setPostsExpanded(expanded) { postsWidget.setAttribute('aria-expanded', String(expanded)); postsPanel.hidden = !expanded; }
+$('#postsToggle').addEventListener('click', () => setPostsExpanded(true));
+$('#postsCollapse').addEventListener('click', () => setPostsExpanded(false));
+api('/api/posts').then(data => { posts = data; renderPosts(); }).catch(() => {});
 function openProduct(id) {
   const product = products.find(item => item.id === id);
   if (!product) return;

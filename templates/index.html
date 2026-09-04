@@ -23,12 +23,14 @@
   <link rel="stylesheet" href="/static/css/motion.css">
   <link rel="stylesheet" href="/static/css/gallery.css">
   <link rel="stylesheet" href="/static/css/cards.css">
+  <link rel="stylesheet" href="/static/css/posts.css">
 </head>
 <body>
 <header class="site-header">
   <div class="container nav">
     <a class="logo" href="/" aria-label="На главную"></a>
     <nav>
+      <a href="#posts">Посты</a>
       <a href="#catalog">Каталог</a>
       <a href="#advantages">Преимущества</a>
       <a href="#contacts">Контакты</a>
@@ -45,6 +47,15 @@
         <h1>Инструменты Дефектолога:<br>Легко и доступно</h1>
         <p>Экономьте время на подготовку к занятиям.</p>
         <a class="btn btn-primary" href="#catalog">Все материалы</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="posts-section" id="posts">
+    <div class="container">
+      <div id="postsWidget" class="posts-widget" aria-expanded="false">
+        <button id="postsToggle" class="posts-toggle" type="button"><span class="eyebrow">Последний пост</span><strong id="latestPostTitle">{{ posts[0].title if posts else 'Новости и полезные материалы' }}</strong><span class="posts-open-hint">Открыть ленту ↓</span></button>
+        <div id="postsPanel" class="posts-panel" hidden><button id="postsCollapse" class="posts-collapse" type="button">Свернуть ↑</button><div id="postsList"></div></div>
       </div>
     </div>
   </section>

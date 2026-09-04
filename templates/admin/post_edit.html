@@ -1,0 +1,9 @@
+{% extends 'admin/model/edit.html' %}
+
+{% block tail %}
+{{ super() }}
+<style>
+  textarea[name="text"] { min-height: 180px; resize: vertical; }
+  input[name="retention_count"] { max-width: 140px; }
+</style>
+{% endblock %}

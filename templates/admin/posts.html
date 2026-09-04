@@ -1,0 +1,24 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<div class="post-admin">
+  <div class="post-admin-head"><div><h2>Посты</h2><p>Создайте пост — он сразу появится в компактной ленте на сайте.</p></div></div>
+  {% if error %}<div class="post-error">{{ error }}</div>{% endif %}
+  <form class="post-editor" method="post" enctype="multipart/form-data">
+    <label>Заголовок<input name="title" required maxlength="200" placeholder="Например: Игра на развитие речи"></label>
+    <label>Текст поста <span class="hint">Поддерживается Markdown</span><textarea name="text" required placeholder="Напишите текст поста..."></textarea></label>
+    <div class="markdown-help"><strong>Markdown</strong><span>**жирный** · *курсив* · [ссылка](https://example.ru) · # Заголовок · - пункт списка</span><span>Картинка в тексте: ![описание](/uploads/имя-файла.jpg)</span></div>
+    <label class="photo-drop">Фото поста<input id="postImage" type="file" name="image" accept="image/png,image/jpeg,image/webp"><span>Нажмите или перетащите PNG, JPG, JPEG, WEBP</span><img id="imagePreview" alt="Предпросмотр"></label>
+    <label class="count-field">Хранить последних постов (0 = только новый)<input name="retention_count" type="number" min="0" max="30" value="{{ default_count }}"></label>
+    <button class="post-submit" type="submit">Опубликовать пост</button>
+  </form>
+  <h3 class="post-list-title">Опубликованные посты</h3>
+  <div class="post-admin-list">{% for post in posts %}<article><div><strong>{{ post.title }}</strong><small>{{ post.created_at.strftime('%d.%m.%Y %H:%M') if post.created_at else '' }}</small><p>{{ post.text|truncate(180) }}</p></div>{% if post.image_path %}<img src="/uploads/{{ post.image_path|urlencode }}" alt="">{% endif %}</article>{% else %}<p>Постов пока нет.</p>{% endfor %}</div>
+</div>
+<script>
+const input = document.getElementById('postImage'), preview = document.getElementById('imagePreview');
+input.addEventListener('change', () => { const file = input.files[0]; if (!file) return; preview.src = URL.createObjectURL(file); preview.style.display = 'block'; });
+</script>
+<style>
+.post-admin{max-width:900px;margin:0 auto;padding:24px}.post-admin-head h2{margin:0 0 5px}.post-admin-head p,.hint,.markdown-help{color:#777}.post-editor{background:#fff;border:1px solid #e4e6e8;border-radius:12px;padding:24px;max-width:700px}.post-editor label{display:block;font-weight:600;margin-bottom:18px}.post-editor input,.post-editor textarea{display:block;width:100%;margin-top:7px;padding:11px;border:1px solid #ccd2d5;border-radius:7px;font:inherit}.post-editor textarea{min-height:220px;resize:vertical}.hint{font-size:12px;font-weight:400;margin-left:8px}.markdown-help{display:grid;gap:4px;background:#f5f7f7;border-radius:8px;padding:12px;margin:-5px 0 18px;font-size:12px}.photo-drop{border:2px dashed #ccd2d5;padding:16px;border-radius:8px;cursor:pointer}.photo-drop span{display:block;color:#777;font-size:13px;font-weight:400}.photo-drop input{border:0;padding:0}.photo-drop img{display:none;max-width:180px;max-height:120px;object-fit:cover;margin-top:10px;border-radius:6px}.count-field{max-width:330px}.post-submit{background:#2d9c9a;color:white;border:0;border-radius:7px;padding:12px 20px;font-weight:700;cursor:pointer}.post-error{background:#fff0f0;color:#a33;padding:12px;border-radius:8px;margin:15px 0;max-width:700px}.post-list-title{margin-top:30px}.post-admin-list{display:grid;gap:10px;max-width:700px}.post-admin-list article{display:flex;justify-content:space-between;gap:15px;background:#fff;border:1px solid #e4e6e8;border-radius:9px;padding:14px}.post-admin-list strong,.post-admin-list small{display:block}.post-admin-list small{color:#888}.post-admin-list p{margin:7px 0 0;color:#666}.post-admin-list img{width:80px;height:60px;object-fit:cover;border-radius:6px}
+</style>
+{% endblock %}
