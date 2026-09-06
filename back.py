@@ -117,6 +117,7 @@ class Lead(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     contact = db.Column(db.String(100))
+    email = db.Column(db.String(100))
     product_name = db.Column(db.String(150))
     date = db.Column(db.DateTime, default=db.func.current_timestamp())
 
@@ -210,6 +211,11 @@ def ensure_schema():
         if 'gallery_paths' not in columns:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE product ADD COLUMN gallery_paths TEXT'))
+    if 'lead' in tables:
+        columns = {c['name'] for c in inspector.get_columns('lead')}
+        if 'email' not in columns:
+            with db.engine.begin() as conn:
+                conn.execute(text('ALTER TABLE lead ADD COLUMN email VARCHAR(100)'))
     if 'site_settings' in tables:
         columns = {c['name'] for c in inspector.get_columns('site_settings')}
         if 'hero_image_path' not in columns:
@@ -373,9 +379,9 @@ class ProductView(ModelView):
 
 
 class LeadView(ModelView):
-    column_list = ('id', 'name', 'contact', 'product_name', 'date')
-    form_columns = ('name', 'contact', 'product_name')
-    column_searchable_list = ('name', 'contact', 'product_name')
+    column_list = ('id', 'name', 'contact', 'email', 'product_name', 'date')
+    form_columns = ('name', 'contact', 'email', 'product_name')
+    column_searchable_list = ('name', 'contact', 'email', 'product_name')
 
 
 class SiteSettingsView(ModelView):
@@ -571,7 +577,7 @@ def get_settings():
     })
 
 
-def send_order_email(name, contact, product):
+def send_order_email(name, contact, email, product):
     """Отправляет уведомление о новой заявке на email через SMTP."""
     settings = SiteSettings.query.first()
     if not settings:
@@ -595,6 +601,7 @@ def send_order_email(name, contact, product):
 
 👤 Имя: {name}
 📞 Контакт: {contact}
+✉️ Почта: {email}
 📦 Товар: {product}
 📅 Дата: {datetime.now()}
 """
@@ -628,21 +635,22 @@ def new_order():
     data = request.get_json(silent=True) or {}
     name = (data.get('name') or '').strip()
     contact = (data.get('contact') or '').strip()
+    email = (data.get('email') or '').strip()
     product = (data.get('product') or '').strip()
-    if not name or not contact or not product:
-        return jsonify({'status': 'error', 'message': 'Заполните имя, контакт и материал.'}), 400
+    if not name or not contact or not email or not product:
+        return jsonify({'status': 'error', 'message': 'Заполните имя, контакт, почту и материал.'}), 400
 
-    lead = Lead(name=name, contact=contact, product_name=product)
+    lead = Lead(name=name, contact=contact, email=email, product_name=product)
     db.session.add(lead)
     db.session.commit()
 
     # Отправка на email
-    send_order_email(name, contact, product)
+    send_order_email(name, contact, email, product)
 
     # Отправка в Telegram
     settings = SiteSettings.query.first()
     if settings and settings.telegram_bot_token and settings.telegram_chat_id and settings.telegram_bot_token != 'ТОКЕН_ОТ_BOTFATHER':
-        msg = f"🚨 НОВЫЙ ЗАКАЗ!\n👤 Имя: {name}\n📞 Контакт: {contact}\n📦 Товар: {product}"
+        msg = f"🚨 НОВЫЙ ЗАКАЗ!\n👤 Имя: {name}\n📞 Контакт: {contact}\n✉️ Почта: {email}\n📦 Товар: {product}"
         tg_url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
         try:
             requests.post(tg_url, json={'chat_id': settings.telegram_chat_id, 'text': msg}, timeout=10)

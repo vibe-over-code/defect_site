@@ -15,7 +15,7 @@ document.querySelector('#productOrderForm')?.addEventListener('submit', async ev
   const form = new FormData(event.target);
   const message = document.querySelector('#orderMessage');
   try {
-    const response = await fetch('/api/new_order', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name: form.get('name'), contact: form.get('contact'), product: document.title }) });
+    const response = await fetch('/api/new_order', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name: form.get('name'), contact: form.get('contact'), email: form.get('email'), product: document.title }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Ошибка отправки');
     message.textContent = 'Заявка принята.';
