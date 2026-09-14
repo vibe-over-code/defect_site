@@ -49,7 +49,14 @@ function renderPosts() {
   if (!element) return;
   if (!posts.length) { element.innerHTML = '<div class="loading">Постов пока нет.</div>'; return; }
   $('#latestPostTitle').textContent = posts[0].title || 'Новости и полезные материалы';
-  element.innerHTML = posts.map(post => `<article class="post-card">${post.image_path ? `<img src="/uploads/${encodeURIComponent(post.image_path)}" alt="">` : ''}<div class="post-body"><h3>${esc(post.title || '')}</h3>${post.html || `<p>${esc(post.text || '')}</p>`}<time>${post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU') : ''}</time></div></article>`).join('');
+  element.innerHTML = posts.map((post, index) => `<article class="post-card"><button class="post-card-toggle" type="button" aria-expanded="false" aria-controls="post-content-${index}"><span>${esc(post.title || 'Без заголовка')}</span><b>Развернуть +</b></button><div class="post-card-content" id="post-content-${index}" hidden>${post.image_path ? `<img src="/uploads/${encodeURIComponent(post.image_path)}" alt="">` : ''}<div class="post-body">${post.html || `<p>${esc(post.text || '')}</p>`}<time>${post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU') : ''}</time></div></div></article>`).join('');
+  element.querySelectorAll('.post-card-toggle').forEach(button => button.addEventListener('click', () => {
+    const content = document.getElementById(button.getAttribute('aria-controls'));
+    const expanded = button.getAttribute('aria-expanded') === 'true';
+    button.setAttribute('aria-expanded', String(!expanded));
+    button.querySelector('b').textContent = expanded ? 'Развернуть +' : 'Свернуть −';
+    content.hidden = expanded;
+  }));
 }
 const postsWidget = $('#postsWidget'), postsPanel = $('#postsPanel');
 function setPostsExpanded(expanded) { postsWidget.setAttribute('aria-expanded', String(expanded)); postsPanel.hidden = !expanded; }
