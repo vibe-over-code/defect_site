@@ -48,6 +48,11 @@ app.config.update(
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'dev-admin-password')
 
 
+@app.route('/favicon.png')
+def favicon():
+    return send_from_directory(BASE_DIR, 'favicon.png', mimetype='image/png')
+
+
 @app.before_request
 def protect_admin():
     """Требует вход для Flask-Admin и связанных с ним API-маршрутов."""
